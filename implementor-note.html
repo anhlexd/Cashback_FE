@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>DevFlow — Implementor Note (Toàn bộ hệ thống)</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    color: #1f2937;
+    line-height: 1.65;
+  }
+  h1 { border-bottom: 2px solid #6366f1; padding-bottom: 0.5rem; }
+  h2 { color: #4f46e5; margin-top: 2rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
+  h3 { color: #374151; margin-top: 1.5rem; }
+  h4 { color: #4b5563; margin-top: 1rem; margin-bottom: 0.5rem; }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: "JetBrains Mono", Menlo, monospace;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85em;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  .file { background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-family: "JetBrains Mono", monospace; font-size: 0.9em; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 600; }
+  .new { background: #d1fae5; color: #065f46; }
+  .modified { background: #fef3c7; color: #92400e; }
+  .rewrite { background: #fce7f3; color: #9d174d; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92em; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  th { background: #f9fafb; font-weight: 600; }
+  ul li { margin-bottom: 0.4rem; }
+  ol li { margin-bottom: 0.4rem; }
+  .note {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .ok {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .danger {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  kbd {
+    display: inline-block;
+    background: #1f2937;
+    color: #f9fafb;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8em;
+    box-shadow: 0 2px 0 #374151;
+  }
+  .toc {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin: 1rem 0 2rem;
+  }
+  .toc ol { margin: 0; padding-left: 1.25rem; }
+  .toc li { margin-bottom: 0.2rem; }
+  .toc a { color: #4338ca; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>DevFlow — Implementor Note (Toàn bộ hệ thống)</h1>
+<p>
+  <strong>Cập nhật:</strong> 2026-05-20<br>
+  <strong>Tác giả:</strong> bill.nguyen@idtinc.co<br>
+  <strong>Repo:</strong> <code>idtinc/devflow-be</code> · <code>idtinc/devflow-fe</code><br>
+  <strong>Nhánh BE:</strong> <code>billnguyen/200526/ibe</code> · <strong>Nhánh FE:</strong> <code>billnguyen/200526</code><br>
+  <strong>Giả định vận hành:</strong> Mọi dự án đã kết nối GitHub; Drive/Figma/OAuth theo cấu hình công ty.
+</p>
+
+<div class="note">
+  <strong>Implementor Note ghim (trong app):</strong> Mỗi dự án có GitHub có tài liệu sống tại tab
+  <strong>Tài liệu</strong> và <strong>Knowledge Graph</strong> — chỉ xem trên DevFlow, cập nhật khi push/sync repo.
+  Phần <strong>Phân tích logic Cursor (đã duyệt)</strong> được ghim vào Implementor Note sau khi Admin duyệt (mục 30).
+  File HTML tĩnh này mô tả nền tảng; bản theo dự án: <code>GET /api/projects/{id}/implementor-note/</code>.
+</div>
+
+<div class="ok">
+  <strong>Tổng hợp thay đổi 2026-05-20</strong> (nhánh <code>billnguyen/200526/ibe</code> · <code>billnguyen/200526</code>)
+  <table style="margin-top:0.75rem;font-size:0.88em">
+    <thead><tr><th>Tính năng</th><th>Vị trí UI</th><th>API / file chính</th></tr></thead>
+    <tbody>
+      <tr><td>Epic Jira-style</td><td>Tab Epic, Create issue</td><td><code>epic_utils</code>, <code>GET …/epics/</code></td></tr>
+      <tr><td>Xem Drive trong DevFlow</td><td>Tab Tài liệu</td><td><code>…/documents/{id}/preview/</code>, <code>DriveFilePreviewModal</code></td></tr>
+      <tr><td>Lịch sử sửa Drive</td><td>Tab Tài liệu</td><td><code>…/edit-history/</code>, <code>integrations/drive/history/</code></td></tr>
+      <tr><td>Knowledge Graph đa repo</td><td>Tab Knowledge Graph</td><td><code>GET …/knowledge-graph/?scope=project</code> hoặc <code>?repo_ids=</code></td></tr>
+      <tr><td>Cursor phân tích logic</td><td>Tab Knowledge Graph (Admin)</td><td><code>/api/cursor-logic-analysis/</code></td></tr>
+      <tr><td>Duyệt Cursor → Implementor Note</td><td>KG → Duyệt &amp; ghim</td><td><code>POST …/approve/</code>, <code>cursor_implementor_publish.py</code></td></tr>
+      <tr><td>Cấu hình Cursor</td><td>Cài đặt → Cursor</td><td><code>CompanySettings.cursor_api_key</code> (không env)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="toc">
+  <strong>Mục lục — Phần hệ thống (A)</strong>
+  <ol>
+    <li><a href="#tong-quan">0. Tổng quan hệ thống</a></li>
+    <li><a href="#backend-arch">1. Kiến trúc Backend</a></li>
+    <li><a href="#frontend-arch">2. Kiến trúc Frontend</a></li>
+    <li><a href="#luong-issue-qa">3. Luồng Issue &amp; QA</a></li>
+    <li><a href="#luong-github">4. Luồng GitHub (toàn dự án)</a></li>
+    <li><a href="#luong-drive-figma">5. Luồng Drive &amp; Figma</a></li>
+    <li><a href="#luong-khac">6. Luồng khác (auth, notif, deadline, Kafa, AI)</a></li>
+    <li><a href="#cau-hinh-deploy">7. Cấu hình &amp; triển khai</a></li>
+    <li><a href="#lich-su-commit">8. Lịch sử commit Git</a></li>
+    <li><a href="#so-do-tong">9. Sơ đồ phụ thuộc</a></li>
+    <li><a href="#implementor-note-pin">10. Implementor Note ghim (theo dự án)</a></li>
+  </ol>
+  <strong>Mục lục — Phụ lục chi tiết (B)</strong>
+  <ol start="10">
+    <li><a href="#phu-luc">Phụ lục — tổng quan</a></li>
+    <li><a href="#muctieu">B.1 Mục tiêu UI issue modals</a></li>
+    <li><a href="#files">B.2 Danh sách file</a></li>
+    <li><a href="#create">B.3–7 Create/Editor/Upload/Detail</a></li>
+    <li><a href="#gantt">B.12 Gantt</a></li>
+    <li><a href="#roles">B.13 Phân quyền dự án</a></li>
+    <li><a href="#knowledge-graph">B.22 Knowledge Graph</a></li>
+    <li><a href="#integrations">B.23 Drive &amp; Figma</a></li>
+    <li><a href="#system-admin">B.26 Admin hệ thống</a></li>
+    <li><a href="#oauth-troubleshoot">B.27 Troubleshooting OAuth</a></li>
+    <li><a href="#issue-ai-brief">B.28 AI brief issue</a></li>
+    <li><a href="#drive-preview">B.29 Xem Drive trong DevFlow</a></li>
+    <li><a href="#cursor-logic">B.30 Phân tích logic Cursor (Admin)</a></li>
+    <li><a href="#ai-estimate">B.31 AI Estimate — Story Point</a></li>
+    <li><a href="#org-dept-position">B.32 Phòng ban &amp; Vị trí (KPI tùy biến)</a></li>
+    <li><a href="#qa-bug-editor">B.44 Form báo bug QA: editor + ảnh + estimate</a></li>
+    <li><a href="#escalate-task">B.45 Báo đỏ (escalate) task thủ công</a></li>
+    <li><a href="#my-created">B.33 My Issues — Tôi tạo (Tốc độ/Tiến độ/Hoàn thành)</a></li>
+    <li><a href="#backlog-optimistic">B.34 Backlog kéo-thả mượt (optimistic, không reload)</a></li>
+    <li><a href="#backlog-bulk">B.35 Backlog: chọn nhiều + chuyển hàng loạt, tiêu đề đầy đủ</a></li>
+    <li><a href="#perf-load">B.36 Tối ưu tốc độ load dự án (hết N+1)</a></li>
+    <li><a href="#home-lightbox">B.37 Trang chủ admin nhanh + popup xem ảnh</a></li>
+    <li><a href="#comment-image">B.38 Đính kèm ảnh trong bình luận</a></li>
+    <li><a href="#epic-story-task">B.39 Phân cấp Epic → Story → Task (chọn cha, tạo tại epic)</a></li>
+    <li><a href="#fix-panel-epic">B.40 Fix: panel không tự đóng khi sửa + epic load nhanh</a></li>
+    <li><a href="#copy-id">B.41 Icon copy mã issue (tiện commit)</a></li>
+    <li><a href="#team-bonus">B.42 Lương KPI theo team/tiến độ dự án</a></li>
+    <li><a href="#daily-report">B.43 Báo cáo công việc hàng ngày</a></li>
+    <li><a href="#report-tracking">B.46 Theo dõi báo cáo nhân sự (HR dashboard)</a></li>
+    <li><a href="#tradeoffs">Tradeoffs &amp; tương lai</a></li>
+  </ol>
+</div>
+
+<h2 id="implementor-note-pin">10. Implementor Note ghim trong dự án (living doc)</h2>
+<ul>
+  <li><strong>Vị trí:</strong> Trang riêng <code>/projects/{id}/implementor-note</code> (mục lục + đọc full). Vào từ nút <strong>Tài liệu dự án</strong> trên header dự án (không lặp trên từng tab).</li>
+  <li><strong>Chỉ xem:</strong> Không tải file; render HTML in-app; <code>view_only</code> / <code>allow_download: false</code>.</li>
+  <li><strong>Điều kiện:</strong> Dự án có ≥1 <code>GitHubRepository</code> active.</li>
+  <li><strong>Nguồn dữ liệu:</strong> Cây file GitHub API, commit gần đây, file Drive (từ khóa BA), Figma/Design, snapshot Knowledge Graph.</li>
+  <li><strong>Cập nhật:</strong> Nút <strong>Cập nhật tài liệu dự án</strong> → <code>POST …/implementor-note/refresh/</code> (sync, giống <code>rebuild_implementor_notes --project-id</code>).</li>
+  <li><strong>Phần Cursor (đã duyệt):</strong> Ghim qua <code>POST /api/cursor-logic-analysis/{id}/approve/</code>; lưu <code>cursor_logic_html</code> trên note; rebuild GitHub không xóa phần này.</li>
+  <li><strong>CI/CD (main):</strong> Sau deploy chạy <code>migrate</code> + <code>rebuild_implementor_notes</code> toàn bộ dự án.</li>
+</ul>
+
+<h2 id="muctieu">1. Mục tiêu &amp; lý do thay đổi</h2>
+<ul>
+  <li><strong>Không gian gõ mô tả</strong>: popup giữa màn quá hẹp khi cần nhập nội dung dài → chuyển sang sidebar panel trượt từ phải.</li>
+  <li><strong>Định dạng phong phú</strong>: thay <code>&lt;textarea&gt;</code> bằng rich-text editor (Tiptap) hỗ trợ heading, list, blockquote, code...</li>
+  <li><strong>UX upload ảnh</strong>: cho phép kéo-thả ảnh trực tiếp vào panel, hiện preview thumbnail trước khi tạo issue.</li>
+  <li><strong>Default thông minh</strong>: hạn chót mặc định = ngày hôm nay (giảm thao tác).</li>
+  <li><strong>Nhất quán</strong>: modal chi tiết issue cũng chuyển sang dạng sidebar phải để có không gian xem đủ thông tin.</li>
+  <li><strong>Năng suất</strong>: bổ sung phím tắt chuẩn (E/M/Esc/Ctrl+Enter).</li>
+</ul>
+
+<h2 id="files">2. Danh sách file thay đổi</h2>
+<table>
+  <thead>
+    <tr><th>File</th><th>Trạng thái</th><th>Mô tả</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="file">components/RichTextEditor.vue</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Component rich-text editor dùng Tiptap với toolbar (B/I/S, H1-H3, list, blockquote, code, undo/redo).</td>
+    </tr>
+    <tr>
+      <td><span class="file">components/CreateIssueModal.vue</span></td>
+      <td><span class="badge rewrite">REWRITE</span></td>
+      <td>Popup → sidebar panel phải 720px. Tiptap editor, drag-drop upload ảnh, API tích hợp, default due_date = hôm nay, phím tắt.</td>
+    </tr>
+    <tr>
+      <td><span class="file">components/IssueModal.vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Popup chi tiết → sidebar panel phải 1100px. Bổ sung phím tắt (E/M/Ctrl+Enter/Esc) + cheatsheet trong sidebar.</td>
+    </tr>
+    <tr>
+      <td><span class="file">assets/css/main.css</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Thêm utility class <code>.kbd</code> dùng chung cho hiển thị phím tắt.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/gantt/[id].vue</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Trang Gantt Chart cho project: timeline với bars, 3 view modes, today-line, sync scroll, xuất Excel.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/projects/[id].vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Thêm nút "Gantt" trong header dẫn tới <code>/gantt/:id</code>.</td>
+    </tr>
+    <tr>
+      <td><span class="file">implementor-note.html</span></td>
+      <td><span class="badge modified">UPDATED</span></td>
+      <td>Tài liệu này (full).</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="create">3. CreateIssueModal — Sidebar Panel</h2>
+
+<h3>3.1 Cấu trúc layout</h3>
+<ul>
+  <li>Dùng <code>Teleport to="body"</code> + <code>fixed inset-0</code> với <code>justify-end</code> để panel cố định bên phải.</li>
+  <li>Chiều rộng: <code>w-full max-w-[720px]</code> (popup cũ chỉ <code>max-w-lg</code> = 512px).</li>
+  <li>Animation slide-in từ phải:
+    <pre><code>@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}</code></pre>
+  </li>
+  <li>Bố cục flex column: <strong>Header</strong> sticky / <strong>Form scrollable</strong> / <strong>Footer</strong> sticky với nút Hủy + Tạo Issue.</li>
+  <li>Đóng panel: click backdrop, nút X, hoặc phím <kbd>Esc</kbd>.</li>
+</ul>
+
+<h3>3.2 Thứ tự field trong form (cuối cùng)</h3>
+<table>
+  <thead>
+    <tr><th>Vị trí</th><th>Cột trái</th><th>Cột phải</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Hàng 1</td><td>Độ ưu tiên</td><td>Hạn chót <em>(default = hôm nay)</em></td></tr>
+    <tr><td>Hàng 2</td><td>Thời gian hoàn thành (phút)</td><td>Người phụ trách</td></tr>
+    <tr><td>Hàng 3</td><td>Story Points</td><td>—</td></tr>
+  </tbody>
+</table>
+<p class="note">
+  <strong>Lưu ý:</strong> Field <code>estimated_minutes</code> (Thời gian hoàn thành) đã được khôi phục sau khi bị mất trong lần rewrite đầu — luôn kiểm tra lại danh sách field gốc trước khi rewrite component nhiều field.
+</p>
+
+<h2 id="editor">4. RichTextEditor — Tiptap component</h2>
+<ul>
+  <li>Dùng <code>@tiptap/vue-3</code>, <code>@tiptap/starter-kit</code>, <code>@tiptap/extension-placeholder</code> (đã có sẵn trong <code>package.json</code>).</li>
+  <li>Component <code>RichTextEditor</code> nhận <code>v-model</code> trả về HTML string, hỗ trợ:
+    <ul>
+      <li>Inline: <strong>bold</strong>, <em>italic</em>, <s>strike</s>, <code>inline code</code>.</li>
+      <li>Block: H1/H2/H3, bullet list, ordered list, blockquote, code block.</li>
+      <li>Undo/Redo, placeholder, min-height tùy biến qua prop.</li>
+    </ul>
+  </li>
+  <li>Project có <code>ssr: false</code> trong <code>nuxt.config.ts</code> nên không cần wrap <code>&lt;ClientOnly&gt;</code>.</li>
+  <li>Editor tự dọn dẹp ở <code>onBeforeUnmount</code> qua <code>editor.value?.destroy()</code>.</li>
+  <li>HTML rỗng <code>&lt;p&gt;&lt;/p&gt;</code> được normalize thành chuỗi rỗng để FE backend không lưu placeholder vô nghĩa.</li>
+</ul>
+
+<h2 id="upload">5. Upload ảnh kéo-thả + API</h2>
+
+<h3>5.1 Hai vùng drop</h3>
+<ol>
+  <li><strong>Dropzone trong form</strong> (chỉ hiện khi <code>pendingImages.length === 0</code>): click chọn hoặc kéo-thả.</li>
+  <li><strong>Toàn bộ panel</strong>: kéo ảnh từ ngoài vào <em>bất kỳ vị trí nào</em> trên panel — overlay xanh hiện ra báo "Thả ảnh vào đây".</li>
+</ol>
+
+<h3>5.2 Validate FE</h3>
+<ul>
+  <li>Filter <code>file.type.startsWith('image/')</code> — chỉ nhận ảnh, file khác bị bỏ qua âm thầm.</li>
+  <li>Reject file &gt; 10MB → set <code>error.value</code>, hiện thông báo.</li>
+  <li>Sinh preview qua <code>URL.createObjectURL()</code> — dọn dẹp ở <code>onBeforeUnmount</code> và khi user remove.</li>
+</ul>
+
+<h3>5.3 Grid thumbnails</h3>
+<ul>
+  <li>3 cột với aspect-square.</li>
+  <li>Overlay progress khi đang upload.</li>
+  <li>Badge ✓ khi success, ⚠ khi error (kèm tooltip error message).</li>
+  <li>Nút X góc trái để remove ảnh chưa upload (chỉ hiện khi hover).</li>
+  <li>Ô "Thêm" cuối grid để chọn thêm ảnh.</li>
+</ul>
+
+<h3>5.4 State machine</h3>
+<pre><code>type PendingImage = {
+  id: string              // random key cho v-for
+  file: File              // file gốc
+  preview: string         // object URL cho thumbnail
+  uploading: boolean      // đang gọi API?
+  progress: number        // 0-100 (giả lập tick 10%/100ms)
+  status: 'idle' | 'success' | 'error'
+  error?: string
+}</code></pre>
+
+<h2 id="duedate">6. Default Due Date = hôm nay</h2>
+<pre><code>function todayDateStr() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`   // 'YYYY-MM-DD' phù hợp &lt;input type="date"&gt;
+}
+
+const form = reactive({
+  // ...
+  due_date: todayDateStr(),
+})</code></pre>
+<p>Trong <code>handleSubmit</code>: nếu user xóa due_date → field bị strip khỏi payload, không gửi BE.</p>
+
+<h2 id="detail">7. IssueModal — Sidebar Panel cho chi tiết</h2>
+
+<h3>7.1 So sánh trước/sau</h3>
+<table>
+  <thead>
+    <tr><th>Khía cạnh</th><th>Trước</th><th>Sau</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Vị trí</td><td>Popup giữa màn</td><td>Sidebar phải</td></tr>
+    <tr><td>Chiều rộng</td><td><code>max-w-4xl</code> (~896px)</td><td><code>max-w-[1100px]</code></td></tr>
+    <tr><td>Chiều cao</td><td>Giới hạn <code>max-h-[80vh]</code></td><td>Full chiều cao màn hình</td></tr>
+    <tr><td>Animation</td><td>scale-in giữa</td><td>slide-in từ phải</td></tr>
+    <tr><td>Sidebar metadata</td><td><code>w-64</code> (256px)</td><td><code>w-80</code> (320px)</td></tr>
+    <tr><td>Header</td><td>issue_key</td><td>issue_key + tên project + tooltip phím tắt</td></tr>
+  </tbody>
+</table>
+
+<h3>7.2 Bố cục flex</h3>
+<pre><code>&lt;div class="flex justify-end fixed inset-0"&gt;          // wrapper
+  &lt;div class="backdrop ..." /&gt;
+  &lt;div class="panel flex flex-col w-full max-w-[1100px] h-full"&gt;
+    &lt;div class="header flex-shrink-0" /&gt;
+    &lt;div class="flex flex-1 min-h-0"&gt;                  // body grow
+      &lt;div class="main flex-1 overflow-y-auto" /&gt;     // scroll riêng
+      &lt;div class="sidebar w-80 overflow-y-auto" /&gt;    // scroll riêng
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p><code>flex-1 min-h-0</code> rất quan trọng — không có nó, các cột sẽ không scroll được mà tự kéo dài content. Thay <code>max-h-[80vh]</code> bằng <code>min-h-0 + overflow-y-auto</code> để dùng toàn bộ chiều cao màn hình.</p>
+
+<h2 id="shortcuts">8. Phím tắt</h2>
+
+<h4>CreateIssueModal</h4>
+<table>
+  <thead><tr><th>Phím</th><th>Hành động</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>Ctrl/⌘ + Enter</kbd></td><td>Tạo issue</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Đóng panel</td></tr>
+  </tbody>
+</table>
+<p>Hint hiển thị inline ở footer panel (kbd UI).</p>
+
+<h4>IssueModal (chi tiết)</h4>
+<table>
+  <thead><tr><th>Phím</th><th>Hành động</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>E</kbd></td><td>Bắt đầu sửa tiêu đề</td></tr>
+    <tr><td><kbd>M</kbd></td><td>Bắt đầu sửa mô tả</td></tr>
+    <tr><td><kbd>Ctrl/⌘ + Enter</kbd></td><td>Lưu (khi đang edit title hoặc description)</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Hủy edit nếu đang edit, ngược lại đóng modal</td></tr>
+  </tbody>
+</table>
+<p>Cheatsheet hiển thị trực tiếp trong sidebar bên phải của panel.</p>
+
+<h4>Logic an toàn</h4>
+<ul>
+  <li><code>isTypingTarget(e.target)</code>: phím chữ (E/M) <strong>không</strong> trigger khi user đang gõ trong <code>&lt;input&gt;</code>, <code>&lt;textarea&gt;</code>, <code>&lt;select&gt;</code>, hoặc element contenteditable (như Tiptap).</li>
+  <li><kbd>Esc</kbd> trong inline-edit chỉ hủy edit, không đóng modal — tránh user mất gõ vì lỡ tay.</li>
+  <li>Bỏ qua nếu có modifier (Ctrl/Meta/Alt) — tránh xung đột với shortcut hệ thống.</li>
+  <li>Auto-detect Mac vs Windows qua <code>navigator.userAgent</code> để hiển thị <kbd>⌘</kbd> hoặc <kbd>Ctrl</kbd>.</li>
+</ul>
+
+<h4>Class .kbd dùng chung</h4>
+<pre><code>.kbd {
+  @apply inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
+         text-[10px] font-mono font-semibold text-gray-600 dark:text-gray-300
+         bg-surface-100 dark:bg-dark-50 border border-surface-200 dark:border-dark-100
+         rounded shadow-sm;
+}</code></pre>
+
+<h2 id="api">9. API Integration</h2>
+
+<h3>9.1 Flow tạo issue + upload ảnh</h3>
+<pre><code>1. POST /api/issues/   → tạo issue (trả về { id, ... })
+2. Với mỗi ảnh pending (tuần tự):
+     POST /api/attachments/  (multipart/form-data)
+       - file:  File
+       - issue: &lt;issue.id&gt;
+   Footer button text update: "Đang tải ảnh (i/N)..."
+3. emit('created', issue) → đóng panel</code></pre>
+
+<div class="note">
+  <strong>Vì sao upload sau khi tạo issue?</strong> Endpoint <code>/api/attachments/</code> yêu cầu field <code>issue</code> là PK đã tồn tại, nên không thể upload trước. Đó là lý do flow phải <em>tạo issue trước → upload ảnh sau</em>.
+</div>
+
+<h3>9.2 Composable / store dùng</h3>
+<ul>
+  <li><code>useApi()</code> trong <code>composables/useApi.ts</code> — tự bỏ <code>Content-Type</code> khi body là FormData để browser tự set boundary.</li>
+  <li><code>useIssuesStore().createIssue()</code> trong <code>stores/issues.ts</code>.</li>
+</ul>
+
+<h3>9.3 Error handling</h3>
+<ul>
+  <li>Nếu một số ảnh upload fail: <strong>issue vẫn được tạo thành công</strong>, hiển thị cảnh báo "<em>N ảnh upload thất bại — issue đã được tạo</em>", <strong>không emit close</strong> để user có thể xem trạng thái từng thumbnail.</li>
+  <li>Nếu API tạo issue fail: bắt error message từ <code>err.data.title[0]</code> hoặc <code>err.data.detail</code>, hiển thị trong banner đỏ.</li>
+</ul>
+
+<h2 id="test">10. Cách test</h2>
+<ol>
+  <li>Chạy <code>npm run dev</code>, mở trang Board hoặc Backlog của một project.</li>
+  <li><strong>Tạo issue mới:</strong>
+    <ul>
+      <li>Bấm "Tạo Issue" → panel trượt từ phải (720px).</li>
+      <li>Default Hạn chót = hôm nay (kiểm tra ô date).</li>
+      <li>Gõ tiêu đề + mô tả với nhiều format (bold/H1/list).</li>
+      <li>Kéo vài ảnh (JPG/PNG) thả vào bất kỳ vị trí nào trên panel.</li>
+      <li>Thử ảnh &gt;10MB → thấy báo lỗi.</li>
+      <li>Thử file không phải ảnh (PDF/.txt) → bị bỏ qua, không hiện thumbnail.</li>
+      <li>Nhập số phút vào "Thời gian hoàn thành" → hiển thị "X giờ Y phút" bên cạnh.</li>
+      <li>Ấn <kbd>Ctrl/⌘ + Enter</kbd> → submit. Text nút đổi qua "Đang tải ảnh (1/N)..." → panel đóng.</li>
+    </ul>
+  </li>
+  <li><strong>Xem chi tiết issue:</strong>
+    <ul>
+      <li>Click issue ở Backlog/Board → panel chi tiết trượt từ phải (1100px), full chiều cao.</li>
+      <li>Main content và sidebar cuộn độc lập.</li>
+      <li>Ấn <kbd>E</kbd> → focus vào input title (không có popup xen kẽ).</li>
+      <li>Ấn <kbd>M</kbd> → mở editor description.</li>
+      <li>Trong textarea description, ấn <kbd>Ctrl/⌘ + Enter</kbd> → lưu.</li>
+      <li>Ấn <kbd>Esc</kbd> trong editor → hủy edit. Ấn <kbd>Esc</kbd> ngoài → đóng modal.</li>
+      <li>Gõ chữ "e" hoặc "m" trong các input metadata (Story Points, Due Date...) → KHÔNG trigger edit (isTypingTarget guard).</li>
+    </ul>
+  </li>
+  <li>Mở issue vừa tạo → xác nhận:
+    <ul>
+      <li>Mô tả có HTML format (bold/headings/lists).</li>
+      <li>Tab Files / Attachments có đủ ảnh đã upload.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="gantt">12. Gantt Chart &amp; Xuất Excel</h2>
+
+<h3>12.1 Mục tiêu</h3>
+<ul>
+  <li>Bổ sung màn hình Gantt Chart để xem tiến độ dự án theo timeline.</li>
+  <li>Hỗ trợ xuất ra file Excel để báo cáo / chia sẻ ngoài hệ thống.</li>
+</ul>
+
+<h3>12.2 File mới &amp; thay đổi</h3>
+<table>
+  <thead><tr><th>File</th><th>Trạng thái</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">pages/gantt/[id].vue</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Trang Gantt chart cho project: timeline + bars + Excel export.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/projects/[id].vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Thêm nút "Gantt" vào header (cạnh Board / Backlog), import <code>ChartBarIcon</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>12.3 Layout</h3>
+<pre><code>┌──────────────────────────────────────────────────────────────────┐
+│ ← │ Gantt — Project │ [Ngày Tuần Tháng] │ Sprint ▼ │ Legend │ Excel │
+├────────────────┬─────────────────────────────────────────────────┤
+│  Cột trái 320  │ Header: Tháng / Năm                             │
+│  ─ Công việc   │ Header: Ngày (highlight cuối tuần)              │
+│  ─ % tiến độ   ├─────────────────────────────────────────────────┤
+│  ─ Hạn chót    │ ▓▓▓▓▓░░░ Sprint bar                            │
+│  Sprint A      │    ▓▓▓░░░ Issue 1                              │
+│   ↳ Issue 1    │       ▓░░░ Issue 2  ⎮ ← line đỏ "Hôm nay"     │
+│   ↳ Issue 2    │            ▓▓▓░ Issue 3                        │
+│  Backlog       │                                                 │
+└────────────────┴─────────────────────────────────────────────────┘</code></pre>
+<ul>
+  <li>Cột trái sticky 320px: tên công việc, % tiến độ, ngày hạn chót.</li>
+  <li>Cột phải scrollable ngang: scale header (tháng + ngày) + bars.</li>
+  <li>Scroll dọc/ngang được <strong>sync</strong> giữa 3 vùng (left list, scale header, timeline) qua <code>syncScroll()</code>.</li>
+</ul>
+
+<h3>12.4 3 chế độ xem</h3>
+<table>
+  <thead><tr><th>View</th><th>Ngày = X px</th><th>Tổng quan</th></tr></thead>
+  <tbody>
+    <tr><td>Ngày</td><td>40px</td><td>Hiện rõ từng ngày, scale chi tiết, dùng cho sprint 1-2 tuần.</td></tr>
+    <tr><td>Tuần (mặc định)</td><td>22px</td><td>Cân bằng, hiển thị 1-2 tháng dễ thấy.</td></tr>
+    <tr><td>Tháng</td><td>8px</td><td>Tổng quan vài tháng đến 1 năm.</td></tr>
+  </tbody>
+</table>
+
+<h3>12.5 Logic suy luận start/end cho issue</h3>
+<p>API không có field <code>start_date</code> cho issue, nên cần infer:</p>
+<pre><code>function inferIssueRange(issue, sprintMap) {
+  start = issue.due_date  ? null : safeParse(issue.created_at)
+  start = start || safeParse(sprint.start_date)
+  end   = safeParse(issue.due_date) || safeParse(sprint.end_date)
+
+  // Nếu có start + estimated_minutes nhưng không có end
+  if (start &amp;&amp; !end &amp;&amp; issue.estimated_minutes) {
+    days = ceil(estimated_minutes / (60 * 8))  // 8h workdays
+    end = addDays(start, days)
+  }
+
+  // Fallback 1-day window nếu chỉ có 1 đầu
+  if (!start &amp;&amp; end) start = addDays(end, -1)
+  if (start &amp;&amp; !end) end = addDays(start, 1)
+}</code></pre>
+<p>Issue thiếu cả start lẫn end → bị filter ra (không spam Gantt với dòng trống).</p>
+
+<h3>12.6 Màu bar theo status</h3>
+<table>
+  <thead><tr><th>Status</th><th>Màu</th><th>Tiến độ tự suy</th></tr></thead>
+  <tbody>
+    <tr><td><code>todo</code></td><td>#9ca3af (xám)</td><td>0%</td></tr>
+    <tr><td><code>in_progress</code></td><td>#3b82f6 (xanh)</td><td>40%</td></tr>
+    <tr><td><code>in_review</code></td><td>#a855f7 (tím)</td><td>75%</td></tr>
+    <tr><td><code>done</code></td><td>#10b981 (xanh lá)</td><td>100%</td></tr>
+    <tr><td><code>cancelled</code></td><td>#ef4444 (đỏ)</td><td>—</td></tr>
+  </tbody>
+</table>
+<p>Sprint bar có 3 màu: active (indigo), completed (xanh lá), planning (tím). Sprint progress lấy từ <code>sprint.completion_rate</code> backend trả về.</p>
+
+<h3>12.7 Marker "Hôm nay"</h3>
+<p>Một đường dọc đỏ với label "Hôm nay" gắn ở vị trí offset của ngày hiện tại — chỉ render nếu hôm nay nằm trong dateRange. Tính bằng:</p>
+<pre><code>const todayOffset = computed(() => {
+  const today = startOfDay(new Date())
+  if (today &lt; dateRange.value.min || today &gt; dateRange.value.max) return null
+  return differenceInDays(today, dateRange.value.min) * dayWidth.value
+})</code></pre>
+
+<h3>12.8 Xuất Excel</h3>
+<p><strong>Approach</strong>: Build HTML table với inline style → Blob với MIME <code>application/vnd.ms-excel</code>. Excel mở file <code>.xls</code> như một spreadsheet bình thường. <em>Không cần thêm dependency</em>.</p>
+<h4>Cấu trúc Excel</h4>
+<pre><code>| STT | Công việc | Trạng thái | Bắt đầu | Kết thúc | Tiến độ | Tuần 1 | Tuần 2 | ... |
+|-----|-----------|------------|---------|----------|---------|--------|--------|-----|
+| 1   | Sprint A  | — Sprint — | 01/05   | 14/05    | 60%     | [▓]    | [▓]    |     |
+| 2   | Issue X   | Đang làm   | 02/05   | 08/05    | 40%     | [▓]    |        |     |</code></pre>
+<ul>
+  <li>Mỗi cột tuần = 7 ngày từ <code>dateRange.min</code>.</li>
+  <li>Cell được tô màu theo <code>row.color</code> nếu khoảng [start, end] giao với tuần đó.</li>
+  <li>Header tô màu indigo (#4f46e5), text trắng.</li>
+  <li>Sprint row có background indigo-100, font-weight bold.</li>
+  <li>Issue row alternating (#f8fafc / #ffffff) để dễ đọc.</li>
+  <li>Filename: <code>gantt-{PROJECT_KEY}-{YYYYMMDD-HHmm}.xls</code></li>
+  <li>BOM (<code>﻿</code>) prepend để Excel nhận UTF-8 đúng tiếng Việt.</li>
+</ul>
+
+<h4>Code download</h4>
+<pre><code>const blob = new Blob(['﻿', html], { type: 'application/vnd.ms-excel' })
+const url = URL.createObjectURL(blob)
+const a = document.createElement('a')
+a.href = url
+a.download = `gantt-${project.value?.key}-${format(new Date(), 'yyyyMMdd-HHmm')}.xls`
+a.click()
+URL.revokeObjectURL(url)</code></pre>
+
+<h3>12.9 Tương tác</h3>
+<ul>
+  <li><strong>Click bar issue</strong> → mở IssueModal (sidebar phải đã làm ở phần 7).</li>
+  <li><strong>Click bar sprint</strong> → không có action (sprint không có modal riêng).</li>
+  <li><strong>Hover bar</strong> → tooltip hiển thị tên + khoảng thời gian + % tiến độ.</li>
+  <li><strong>Filter sprint</strong> → dropdown chọn "Tất cả" / "Backlog" / từng sprint.</li>
+  <li><strong>Back</strong> → nút <code>ChevronLeftIcon</code> về trang project chi tiết.</li>
+</ul>
+
+<h3>12.10 Trạng thái empty</h3>
+<p>Khi không có issue nào có đủ start/end → hiện thông báo <em>"Chưa có dữ liệu để hiển thị Gantt. Hãy đảm bảo các issue có ngày bắt đầu/hạn chót hoặc thuộc một sprint có lịch."</em></p>
+
+<h3>12.11 Navigation</h3>
+<p>Nút <strong>Gantt</strong> được thêm vào header trang chi tiết project (cạnh Board / Backlog):</p>
+<pre><code>&lt;NuxtLink :to="`/gantt/${projectId}`" class="btn-secondary btn-sm"&gt;
+  &lt;ChartBarIcon class="w-3.5 h-3.5" /&gt;
+  Gantt
+&lt;/NuxtLink&gt;</code></pre>
+
+<h2 id="gantt-polish">12.B Gantt Chart — Polish UI</h2>
+<p>Sau khi review, Gantt chart đã được làm đẹp hơn với:</p>
+<ul>
+  <li><strong>Hero header</strong>: icon gradient indigo→violet, tiêu đề + meta (key, số dòng, khoảng thời gian).</li>
+  <li><strong>Stats summary cards</strong>: Tổng issue · Đang làm · Hoàn thành · Quá hạn · Tiến độ tổng (với progress bar mini).</li>
+  <li><strong>Legend</strong>: chú thích trực tiếp dưới stats, gồm cả Sprint gradient + Today line.</li>
+  <li><strong>View toggle</strong>: segmented control (pill-style) thay vì button thường.</li>
+  <li><strong>Bars</strong>:
+    <ul>
+      <li>Gradient backgrounds, rounded corners, shadow lift on hover (<code>-translate-y-px</code>).</li>
+      <li>Progress phần future được phủ blur trắng để phân biệt; progress strip ở đáy.</li>
+      <li>% label hiển thị nếu bar đủ rộng (≥80px).</li>
+      <li>Sprint bars có diagonal stripes (background gradient indigo→violet).</li>
+      <li>Issue bars có diamond marker ở đầu cuối (end milestone).</li>
+      <li>Animation <code>bar-in</code> 0.4s khi mount.</li>
+    </ul>
+  </li>
+  <li><strong>Today marker</strong>:
+    <ul>
+      <li>Line gradient + soft red glow (<code>shadow-[0_0_8px_rgba(239,68,68,0.5)]</code>).</li>
+      <li>"Hôm nay" pill phía trên với pulse animation 2.5s.</li>
+      <li>Tick ngày hôm nay trên scale header được highlight đỏ.</li>
+    </ul>
+  </li>
+  <li><strong>Left column rows</strong>:
+    <ul>
+      <li>Sprint rows: gradient nền + border-left brand-500 đặc trưng.</li>
+      <li>Mini progress bar (8px thanh ngang) thay vì chỉ % text.</li>
+      <li>Issue quá hạn: badge cảnh báo đỏ + icon <code>ExclamationCircleIcon</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Weekend/Today highlighting trong scale</strong>: ngày cuối tuần dùng amber tone (mềm hơn), ngày hôm nay highlight đỏ rõ rệt.</li>
+  <li><strong>Loading skeleton</strong> thay vì spinner đơn giản: 6 rows giả lập với opacity giảm dần.</li>
+  <li><strong>Empty state</strong>: icon trong gradient circle, copy rõ ràng, CTA dẫn về Backlog để thêm hạn chót.</li>
+  <li><strong>Custom slim scrollbars</strong> (8px, hover effect).</li>
+  <li><strong>Page background</strong>: gradient nhẹ surface-50→white→brand-50 (light mode).</li>
+</ul>
+
+<h2 id="roles">13. Phân quyền theo dự án (Role-based Access)</h2>
+
+<h3>13.1 Mục tiêu</h3>
+<ul>
+  <li><strong>"Nhân sự ở dự án nào thì xem được dự án đó"</strong>: user không phải thành viên của project sẽ không truy cập được trang chi tiết / board / backlog / gantt của project đó.</li>
+  <li>Hiển thị rõ vai trò của user trong từng dự án.</li>
+  <li>Ẩn các action quản lý (thêm thành viên, sửa cài đặt, xóa project) với user không có quyền.</li>
+</ul>
+
+<h3>13.2 File mới &amp; thay đổi</h3>
+<table>
+  <thead><tr><th>File</th><th>Trạng thái</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">composables/useProjectRole.ts</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Composable trả về role + permission flags (canManage, canDelete...) cho project hiện tại.</td>
+    </tr>
+    <tr>
+      <td><span class="file">middleware/project-member.ts</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Nuxt route middleware chặn truy cập project nếu user không phải thành viên — redirect về <code>/projects</code> + toast.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/projects/[id].vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Áp dụng <code>useProjectRole</code>, gắn middleware, ẩn nút Settings/Add Member/Delete + role badge.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/projects/index.vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Hiện role badge trên project card.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/board/[id].vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Gắn middleware, ẩn nút "Tạo Issue" nếu user là viewer.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/backlog/[id].vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Gắn middleware, ẩn nút "Sprint" (cần manage), nút "Issue" cho viewer.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/gantt/[id].vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Gắn middleware.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>13.3 Các role &amp; ma trận quyền</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Role</th>
+      <th>Nhãn</th>
+      <th>Xem</th>
+      <th>Tạo issue</th>
+      <th>Tạo sprint / settings</th>
+      <th>Quản lý thành viên</th>
+      <th>Xóa project</th>
+      <th>Tạo project mới</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>admin</code> (hệ thống)</td><td>Admin hệ thống</td><td>✓ mọi project</td><td>✓</td><td>✓</td><td>✓</td><td><strong>✓</strong></td><td><strong>✓</strong></td></tr>
+    <tr><td><code>owner</code></td><td>Chủ dự án</td><td>✓ (member)</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+    <tr><td><code>manager</code></td><td>Quản lý</td><td>✓</td><td>✓</td><td>✓</td><td>✓ (trừ owner)</td><td>✗</td><td>✗</td></tr>
+    <tr><td><code>developer</code></td><td>Developer</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+    <tr><td><code>tester</code></td><td>Tester</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+    <tr><td><code>viewer</code></td><td>Người xem</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+  </tbody>
+</table>
+<p><code>admin</code> = <code>User.role === 'admin'</code> (app-level), không phải role trong <code>ProjectMember</code>.</p>
+
+<h3>13.4 Middleware <code>project-member</code></h3>
+<p>Chạy sau <code>auth</code>. Khi user vào URL có <code>:id</code> (board/backlog/gantt/projects/:id):</p>
+<pre><code>1. Lấy project ID từ route params
+2. Đảm bảo authStore.user có sẵn (load profile nếu cần)
+3. Gọi projectsStore.fetchProject(id)
+   - Nếu BE trả 403/404 → toast "Bạn không có quyền truy cập" + redirect /projects
+4. Nếu authStore.user.role === 'admin' → cho phép ngay (không cần là member)
+5. Check membership (user thường):
+   - Nếu user.id có trong project.members → cho phép
+   - Hoặc project.current_user_role tồn tại (BE trả về) → cho phép
+   - Ngược lại → toast + redirect /projects</code></pre>
+<p>Khai báo trong page:</p>
+<pre><code>definePageMeta({ middleware: ['auth', 'project-member'] })</code></pre>
+
+<h3>13.5 Composable <code>useProjectRole(projectId)</code></h3>
+<p>Trả về reactive role + permission flags. Tìm member tương ứng từ:</p>
+<ol>
+  <li><code>project.members</code> (array full) — ưu tiên</li>
+  <li><code>project.project_members</code> — fallback</li>
+  <li><code>project.current_user_role</code> (string từ BE) — fallback</li>
+</ol>
+
+<pre><code>const {
+  role,              // 'owner' | 'manager' | 'developer' | 'tester' | 'viewer' | null
+  isMember, isOwner, isManager, isDeveloper, isTester, isViewer,
+  canManage,         // owner | manager
+  canEditSettings,   // owner | manager
+  canDelete,         // system admin only (2026-05-20)
+  isSystemAdmin,     // user.role === 'admin'
+  canAddMember,      // owner | manager
+  canRemoveMember,   // owner | manager
+  canChangeRole,     // owner | manager
+  canCreateIssue,    // any member except viewer
+  canEditAnyIssue,   // owner | manager
+} = useProjectRole(projectId)</code></pre>
+
+<h3>13.6 UI gating chi tiết</h3>
+
+<h4>Trang Project list (<code>/projects</code>)</h4>
+<ul>
+  <li>Mỗi project card hiển thị role badge nếu user có vai trò (đọc từ <code>current_user_role</code> hoặc <code>members</code>).</li>
+  <li>Nếu BE đã filter (most likely): user chỉ thấy project mình tham gia.</li>
+  <li>Nếu BE không filter: user thấy tất cả, nhưng click vào project lạ sẽ bị middleware chặn.</li>
+</ul>
+
+<h4>Trang Project detail (<code>/projects/:id</code>)</h4>
+<ul>
+  <li>Header: hiển thị role badge của user bên cạnh nút Board/Backlog/Gantt.</li>
+  <li>Nút bánh răng <strong>Settings</strong>: chỉ owner/manager.</li>
+  <li>Tab <strong>Settings</strong>: hiển thị form chỉ khi <code>canEditSettings</code>, ngược lại hiện màn "Không có quyền truy cập" với icon khóa.</li>
+  <li>Tab <strong>Members</strong>:
+    <ul>
+      <li>Nút "Thêm thành viên": owner/manager.</li>
+      <li>Mỗi member: badge "Bạn" cho current user.</li>
+      <li>Select đổi role: chỉ owner/manager mới thấy; member là owner thì lock (không cho đổi).</li>
+      <li>Option "Owner" trong dropdown: chỉ owner mới được chọn (manager không phong owner mới).</li>
+      <li>Nút xóa: ẩn nếu user không có quyền, hoặc target là owner, hoặc target là chính mình.</li>
+    </ul>
+  </li>
+  <li>Tab <strong>Issues</strong>: nút "Issue" ẩn cho viewer.</li>
+  <li>Danger Zone (xóa project): chỉ <strong>Admin hệ thống</strong> (<code>canDelete</code> = admin app-level).</li>
+</ul>
+
+<h4>Trang Board / Backlog / Gantt</h4>
+<ul>
+  <li>Tất cả gắn middleware <code>project-member</code>.</li>
+  <li>Board: nút "Tạo Issue" ẩn nếu không có <code>canCreateIssue</code>.</li>
+  <li>Backlog: nút "Sprint" cần <code>canManage</code>, nút "Issue" cần <code>canCreateIssue</code>.</li>
+  <li>Gantt: read-only nên không cần thêm gate ngoài middleware.</li>
+</ul>
+
+<h3>13.7 Hai layer bảo vệ</h3>
+<ol>
+  <li><strong>BE</strong>: <code>ProjectViewSet.get_queryset()</code> — admin thấy mọi project; user khác chỉ project là member. <code>DELETE /api/projects/{id}/</code> và <code>POST /api/projects/</code> chỉ admin (<code>IsSystemAdmin</code>). Helper <code>apps/projects/access.py</code> → <code>filter_by_project_membership()</code> dùng cho issues, sprints, comments, GitHub, Drive, Figma.</li>
+  <li><strong>FE middleware + permission flags</strong>: UX đẹp (redirect sạch + toast), không hiện nút action không có quyền.</li>
+</ol>
+
+<div class="note">
+  <strong>Quan trọng:</strong> FE-only enforcement <em>không thay thế</em> BE permissions. User có thể bypass FE bằng cách gọi API trực tiếp — backend phải tự bảo vệ resources. FE chỉ là UX layer.
+</div>
+
+<h2 id="idle-warning">14. Cảnh báo "Hãy bắt đầu công việc"</h2>
+
+<h3>14.1 Yêu cầu</h3>
+<p>Khi nhân sự đang tham gia dự án (project &gt; 0) mà <strong>không có task nào ở trạng thái <code>in_progress</code></strong> được giao cho mình → hiện banner cảnh báo đỏ với thông điệp "Hãy bắt đầu công việc".</p>
+
+<h3>14.2 File mới</h3>
+<table>
+  <thead><tr><th>File</th><th>Trạng thái</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">composables/useIdleTaskWarning.ts</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Singleton state quản lý đếm <code>in_progress</code>, auto-refresh, dismiss cho session.</td>
+    </tr>
+    <tr>
+      <td><span class="file">components/IdleTaskWarning.vue</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Banner đỏ sliding-down ở đầu trang, có icon nhấp nháy, gradient stripes động, nút "Xem issues của tôi" + nút đóng.</td>
+    </tr>
+    <tr>
+      <td><span class="file">layouts/default.vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Gắn <code>&lt;IdleTaskWarning&gt;</code> dưới top bar, chỉ render khi đã đăng nhập.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>14.3 Logic kiểm tra</h3>
+<pre><code>shouldWarn = !dismissed
+          && authStore.user != null
+          && projectsCount &gt; 0
+          && inProgressCount === 0</code></pre>
+<p><code>inProgressCount</code> được lấy từ <code>GET /api/issues/?assignee={me}&amp;status=in_progress&amp;page_size=1</code>. Dùng <code>count</code> từ DRF response nếu có, fallback sang <code>results.length</code>.</p>
+
+<h3>14.4 Refresh chiến lược</h3>
+<ul>
+  <li><strong>Khi mount</strong>: force check (banner sẵn sàng ngay khi user vào app).</li>
+  <li><strong>Auto-refresh</strong>: mỗi 60 giây qua <code>setInterval</code>.</li>
+  <li><strong>Throttle</strong>: bỏ qua nếu check trong vòng 5s gần nhất (trừ khi force).</li>
+  <li><strong>Auto-fetch projects</strong>: nếu store chưa load → gọi <code>fetchProjects()</code> trước khi compute.</li>
+</ul>
+
+<h3>14.5 UI/UX của banner</h3>
+<ul>
+  <li><strong>Gradient nền</strong>: red-600 → rose-600 → red-600.</li>
+  <li><strong>Diagonal stripes</strong> chạy chậm 24s loop tạo cảm giác "warning active".</li>
+  <li><strong>Icon</strong>: <code>ExclamationTriangleIcon</code> trong circle white/20, có bounce-soft 1.6s + ping ring 2s.</li>
+  <li><strong>Label</strong>: chip "CẢNH BÁO" + tiêu đề "Hãy bắt đầu công việc" + dòng phụ chỉ rõ <code>{N}</code> dự án + 0 task đang chạy.</li>
+  <li><strong>CTA</strong>: nút trắng "Xem issues của tôi →" link sang <code>/my-issues</code>.</li>
+  <li><strong>Dismiss</strong>: nút X — tắt cho đến khi user reload (state lưu in-memory).</li>
+  <li><strong>Animation</strong>: slide-down 0.3s khi xuất hiện.</li>
+  <li><strong>Shadow</strong>: red glow <code>0 4px 14px -2px rgba(220,38,38,0.4)</code>.</li>
+</ul>
+
+<h3>14.6 Singleton state</h3>
+<p>Composable dùng các ref ở module scope (<code>inProgressCount</code>, <code>dismissed</code>, <code>refreshTimer</code>) để mọi nơi gọi <code>useIdleTaskWarning()</code> chia sẻ cùng state. Nhờ đó:</p>
+<ul>
+  <li>Dismiss từ banner → state thay đổi → tất cả banner trên page biến mất.</li>
+  <li>Force refresh từ bất kỳ component nào → cập nhật count toàn cục.</li>
+</ul>
+
+<h2 id="notif-fix">15. Fix bug thông báo khi có người comment</h2>
+
+<h3>15.1 Triệu chứng</h3>
+<p>Khi một user comment lên issue, recipient (assignee / @mentioned) <strong>không nhận được toast hay browser notification</strong>, badge "Bell" trên top bar không tăng.</p>
+
+<h3>15.2 Nguyên nhân tìm thấy</h3>
+<ul>
+  <li><strong>WebSocket message handler quá strict</strong>: chỉ accept đúng <code>data.type === 'notification'</code>. Nếu BE gửi shape khác (vd <code>data.event</code>, hoặc payload lồng trong <code>data.notification</code>) → message bị drop âm thầm (catch rỗng nuốt lỗi).</li>
+  <li><strong>Không có polling fallback</strong>: nếu WS rớt giữa chừng hoặc token hết hạn, recipient sẽ mất hoàn toàn thông báo cho đến khi reload trang.</li>
+  <li><strong>Không reconnect khi token refresh</strong>: useApi refresh token sau 401 nhưng WS vẫn dùng token cũ → server kick connection.</li>
+  <li><strong>Không có keep-alive ping</strong>: server có thể đóng connection sau ~60s idle.</li>
+  <li><strong>Sau khi post comment, FE không trigger refresh</strong> nên người gửi không nhận feedback gì.</li>
+</ul>
+
+<h3>15.3 Các fix đã làm</h3>
+<table>
+  <thead><tr><th>File</th><th>Thay đổi</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">stores/notifications.ts</span></td>
+      <td>
+        <ul>
+          <li><strong>Lenient message handler</strong>: accept cả <code>data.type</code>, <code>data.event</code>, payload lồng (<code>data.notification</code>, <code>data.data</code>); detect "looks like notification" qua nhiều fallback.</li>
+          <li><strong>Ping mỗi 25s</strong> giữ connection alive (<code>{type:'ping'}</code>).</li>
+          <li><strong>Polling fallback 30s</strong>: gọi <code>fetchUnreadCount()</code>, nếu tăng thì fetch full list để surface toast.</li>
+          <li><strong>Reconnect khi token đổi</strong>: lưu <code>lastWsToken</code>, so sánh trước khi mở socket mới.</li>
+          <li><strong>Action <code>refreshSoon()</code></strong>: cho phép component gọi sau khi tạo comment / mention.</li>
+          <li>Log warning thay vì swallow lỗi parse.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td><span class="file">components/IssueComments.vue</span></td>
+      <td>Sau khi <code>POST /api/comments/</code> thành công → gọi <code>useNotificationsStore().refreshSoon()</code> nudge để recipient thấy nhanh hơn.</td>
+    </tr>
+    <tr>
+      <td><span class="file">layouts/default.vue</span></td>
+      <td>Watch <code>authStore.accessToken</code>: token đổi → <code>connectWebSocket(newToken)</code> rebuild connection.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>15.4 Lý do dùng polling kèm WS</h3>
+<p>WebSocket là realtime nhưng cũng dễ "lặng lẽ chết" (mạng yếu, proxy timeout, browser tab background). Polling 30s là layer phòng thủ — chi phí rất rẻ (chỉ <code>/api/notifications/unread_count/</code>), nhưng đảm bảo notification luôn xuất hiện trong vòng tối đa 30 giây ngay cả khi WS bị down.</p>
+
+<h2 id="responsive">16. Responsive toàn bộ trang</h2>
+
+<h3>16.1 Mục tiêu</h3>
+<p>Thiết kế gốc fix-width desktop. Cần handle 3 breakpoints chính: mobile (&lt; 640px), tablet (sm–md), desktop (lg+).</p>
+
+<h3>16.2 Mobile sidebar</h3>
+<table>
+  <thead><tr><th>File</th><th>Thay đổi</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">layouts/default.vue</span></td>
+      <td>
+        <ul>
+          <li><strong>Sidebar overlay trên &lt; lg</strong>: <code>position: fixed</code> + <code>translate-x</code> animation. Trên lg+ thì <code>relative</code> như cũ.</li>
+          <li><strong>Backdrop</strong> đen với <code>fade</code> transition khi sidebar mở trên mobile.</li>
+          <li><strong>Nút Hamburger</strong> <code>Bars3Icon</code> bên trái top bar, chỉ hiện &lt; lg.</li>
+          <li><code>useMediaQuery('(max-width: 1023px)')</code> để biết mobile/desktop.</li>
+          <li><strong>Auto-collapse</strong> khi resize → mobile.</li>
+          <li><strong>Auto-close</strong> khi navigate trên mobile (watch <code>route.fullPath</code>).</li>
+          <li>Top bar: nút Search thu gọn về icon-only trên &lt; sm; gap padding tightening.</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>16.3 Các trang đã responsive hoá</h3>
+<table>
+  <thead><tr><th>File</th><th>Thay đổi chính</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">pages/board/[id].vue</span></td>
+      <td>Toolbar <code>flex-wrap</code>; ẩn title "Kanban Board" và label nút trên mobile; avatar member chỉ hiện md+; sprint/type select shrink. Kanban column dùng <code>w-[82vw] sm:w-72</code> để scroll snap-feel trên mobile.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/backlog/[id].vue</span></td>
+      <td>Toolbar <code>flex-wrap</code>; search input full-width <code>order-first</code> trên mobile; ẩn label Sprint/Issue button khi không đủ chỗ.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/projects/[id].vue</span></td>
+      <td>Header info wraps; label Board/Backlog/Gantt chỉ hiện sm+ (icon-only mobile); tabs scroll ngang nếu tràn.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/gantt/[id].vue</span></td>
+      <td>Left column thu hẹp <code>w-48 sm:w-72 lg:w-80</code>; bỏ cột "Hạn chót" trên mobile (grid 2-col); hero header wrap.</td>
+    </tr>
+    <tr>
+      <td><span class="file">components/IssueModal.vue</span></td>
+      <td>Body chuyển từ <code>flex</code> ngang sang <code>flex-col lg:flex-row</code> — main + sidebar metadata stack dọc trên &lt; lg, border-top thay border-left. Padding nhỏ hơn trên mobile.</td>
+    </tr>
+    <tr>
+      <td><span class="file">components/CreateIssueModal.vue</span></td>
+      <td>Meta grid 2-col chuyển sang single column trên mobile (<code>grid-cols-1 sm:grid-cols-2</code>).</td>
+    </tr>
+    <tr>
+      <td><span class="file">assets/css/main.css</span></td>
+      <td><code>.kanban-col</code> rộng <code>82vw</code> trên mobile để hiện 1 cột vừa khung; 72 (288px) cố định từ sm+.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>16.4 Pattern dùng</h3>
+<ul>
+  <li><strong>Hidden labels trên mobile</strong>: <code>&lt;span class="hidden sm:inline"&gt;Label&lt;/span&gt;</code> giữ icon, ẩn text.</li>
+  <li><strong>Flex-wrap toolbar</strong>: cho nhiều control tự xuống dòng khi không đủ chỗ.</li>
+  <li><strong>Grid breakpoint stack</strong>: <code>grid-cols-1 sm:grid-cols-2 lg:grid-cols-3/4</code>.</li>
+  <li><strong>Sidebar panel mobile</strong>: <code>w-full max-w-[720px]</code> tự fill toàn screen ở phone.</li>
+  <li><strong>Horizontal scroll fallback</strong>: tabs / board columns dùng <code>overflow-x-auto</code> khi cần.</li>
+</ul>
+
+<h2 id="admin-dashboard">17. Dashboard tổng quan cho Admin</h2>
+
+<h3>17.1 Yêu cầu</h3>
+<p>Khi user có role <code>admin</code> (app-level), trang Dashboard cần hiển thị thêm:</p>
+<ul>
+  <li>Tổng quan toàn bộ dự án (không chỉ project của user).</li>
+  <li>Danh sách dự án bị chậm deadline.</li>
+  <li>Top nhân sự đang chậm deadline (nhiều task overdue nhất).</li>
+  <li>Top nhân sự hoàn thành công việc (nhiều task done nhất trong 30 ngày).</li>
+</ul>
+
+<h3>17.2 File mới &amp; sửa</h3>
+<table>
+  <thead><tr><th>File</th><th>Trạng thái</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">components/AdminDashboard.vue</span></td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Khối tổng quan admin: 5 KPI cards + bảng dự án chậm + 2 leaderboard nhân sự.</td>
+    </tr>
+    <tr>
+      <td><span class="file">pages/index.vue</span></td>
+      <td><span class="badge modified">MODIFIED</span></td>
+      <td>Render <code>&lt;AdminDashboard /&gt;</code> phía trên dashboard cá nhân khi <code>user.role === 'admin'</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>17.3 Bố cục</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│ [SHIELD] Tổng quan Admin                  [Làm mới ↻]  │
+│ Trạng thái toàn bộ dự án &amp; nhân sự                     │
+├─────────────────────────────────────────────────────────┤
+│ [Tổng] [Active] [Bị chậm🔴] [Nhân sự] [Issue + overdue] │
+├──────────────────────────────┬──────────────────────────┤
+│ Dự án bị chậm deadline       │ 🐢 Top nhân sự chậm      │
+│  ▸ Project A · Quá 5 ngày   │   1. User X — 8 quá hạn │
+│  ▸ Project B · 12 issues OD │   2. User Y — 5 quá hạn │
+│  ▸ ...                       ├──────────────────────────┤
+│                              │ 🚀 Top nhân sự hoàn thành│
+│                              │ (30 ngày qua)            │
+│                              │   🥇 User M — 12 ✓ · SP │
+│                              │   🥈 User N — 9  ✓ · SP │
+└──────────────────────────────┴──────────────────────────┘</code></pre>
+
+<h3>17.4 Logic tính toán (FE-side)</h3>
+<p>Tất cả aggregation chạy ở FE từ 3 endpoint chính:</p>
+<ul>
+  <li><code>GET /api/projects/?page_size=200</code></li>
+  <li><code>GET /api/issues/?page_size=1000&amp;ordering=-updated_at</code></li>
+  <li><code>GET /api/auth/users/?page_size=500</code> (fallback nếu BE không cho phép: ước lượng từ assignee + members)</li>
+</ul>
+
+<h4>Dự án bị chậm</h4>
+<pre><code>// Một project được coi là "bị chậm" nếu:
+//   - end_date đã qua nhưng status chưa completed/archived  HOẶC
+//   - có ít nhất 1 issue đang mở với due_date đã qua
+// Sắp xếp: nhiều issue overdue trước, end_date sớm hơn trước</code></pre>
+
+<h4>Aggregate per-assignee</h4>
+<pre><code>memberStats = Map&lt;userId, {
+  total: number       // tổng task được giao
+  overdue: number     // task chưa done && due_date đã qua
+  done: number        // task done trong 30 ngày
+  points: number      // tổng story_points của task done 30 ngày
+}&gt;</code></pre>
+
+<h4>Top nhân sự chậm</h4>
+<p>Filter <code>overdue &gt; 0</code>, sort theo <code>overdue DESC</code>, tie-break theo <code>total DESC</code>.</p>
+
+<h4>Top nhân sự hoàn thành</h4>
+<p>Filter <code>done &gt; 0</code>, sort theo <code>done DESC</code>, tie-break theo <code>points DESC</code>. Top 3 hiển thị huy chương 🥇🥈🥉.</p>
+
+<h3>17.5 UX detail</h3>
+<ul>
+  <li><strong>5 KPI cards</strong> ở đầu: Tổng / Active / Bị chậm (border đỏ) / Nhân sự / Issue. Card "Bị chậm" có accent đỏ rõ rệt.</li>
+  <li><strong>Bảng project chậm</strong>: mỗi row link tới project detail, icon quá X ngày, đếm số issue overdue, badge status.</li>
+  <li><strong>Leaderboard</strong>: top 5 với avatar, email, badge overdue/done, story points. Top 3 có icon huy chương.</li>
+  <li><strong>Skeleton loading</strong> cho tất cả lists khi đang fetch.</li>
+  <li><strong>Empty states</strong>: "🎉 Không có dự án nào bị chậm", "Chưa có dữ liệu hoàn thành" nếu rỗng.</li>
+  <li><strong>Nút "Làm mới"</strong> manual refresh với icon xoay khi đang loading.</li>
+</ul>
+
+<h3>17.6 Phân quyền</h3>
+<p>Chỉ render khối khi <code>authStore.user.role === 'admin'</code>. Đây là role <strong>app-level</strong> (User.role), khác với role project-level (owner/manager/...). Component giữ trong cùng trang dashboard để user thường vẫn thấy phần dashboard cá nhân bên dưới (nếu họ có role admin, họ sẽ thấy CẢ HAI).</p>
+
+<h3>17.7 Drill-down: drawer chi tiết khi click vào dự án/nhân sự chậm</h3>
+<p>Bổ sung <span class="file">components/OverdueIssuesDrawer.vue</span> — slide-from-right drawer hiển thị danh sách issue quá hạn cụ thể khi user click vào:</p>
+<ul>
+  <li><strong>Card dự án bị chậm</strong> → drawer lọc theo <code>filterByProject</code> = projectId của dự án đó.</li>
+  <li><strong>Row "Top nhân sự đang chậm"</strong> → drawer lọc theo <code>filterByAssignee</code> = userId của nhân sự đó.</li>
+</ul>
+
+<h4>Cấu trúc drawer</h4>
+<ul>
+  <li><strong>Header</strong>: icon đỏ gradient, tiêu đề (project name / user full name), summary "X issue đang quá hạn · tổng Y ngày trễ".</li>
+  <li><strong>Summary row</strong>: 3 stat nhỏ — trung bình ngày quá hạn / cao nhất / số đang in_progress.</li>
+  <li><strong>List</strong>:
+    <ul>
+      <li>Mỗi row: badge gradient theo mức độ chậm (vàng 1-2 ngày → đỏ đậm ≥14 ngày), hiển thị số ngày to giữa, "ngày" nhỏ phía dưới.</li>
+      <li>issue_key (mono font), status badge, priority badge nếu critical/high.</li>
+      <li>Title issue, hạn chót đỏ + assignee/project (tuỳ filter mode).</li>
+      <li>Click row → mở IssueModal lồng để xem chi tiết.</li>
+    </ul>
+  </li>
+  <li><strong>Empty state</strong>: icon xanh + "Không có issue quá hạn 🎉" khi filter trả 0 kết quả.</li>
+  <li><strong>Đóng</strong>: backdrop click, nút X, hoặc <kbd>Esc</kbd>.</li>
+</ul>
+
+<h4>State trong AdminDashboard</h4>
+<pre><code>const drawerOpen = ref(false)
+const drawerTitle = ref('')
+const drawerProjectId = ref&lt;number | undefined&gt;()
+const drawerAssigneeId = ref&lt;number | undefined&gt;()
+
+function openProjectOverdue(p)  { ... bật drawer với projectId ... }
+function openMemberOverdue(m)   { ... bật drawer với assigneeId ... }</code></pre>
+
+<h3>17.8 Tinh chỉnh layout dashboard</h3>
+<ul>
+  <li><strong>Đối với admin</strong>: ẩn grid "Tổng issue / Đang làm / Hoàn thành / Quá hạn" cá nhân — vì AdminDashboard đã có 5 KPI cards mạnh hơn ở trên. Tránh hiển thị 2 cụm stats trùng lặp.</li>
+  <li><strong>Đối với non-admin</strong>: bổ sung tiêu đề "Tổng quan của bạn" để rõ stats này là CÁ NHÂN, không phải org-wide.</li>
+  <li><strong>Project overdue card</strong>: thay <code>&lt;NuxtLink&gt;</code> bằng <code>&lt;button&gt;</code> để mở drawer thay vì điều hướng (vẫn có thể vào trang chi tiết project bằng cách click bar/issue → mở IssueModal lồng).</li>
+  <li><strong>Lagging member row</strong>: chuyển thành button có hover (red tint), badge "Xem chi tiết →" gợi ý click.</li>
+</ul>
+
+<h2 id="duplicate-issue">18. Duplicate issue</h2>
+
+<h3>18.1 Yêu cầu</h3>
+<p>Cho phép tạo issue mới bằng cách copy issue đang xem (giống ~80%, chỉ chỉnh sửa phần khác biệt) → tiết kiệm thao tác khi tạo nhiều issue giống nhau.</p>
+
+<h3>18.2 Flow</h3>
+<ol>
+  <li>User mở IssueModal chi tiết của issue cần copy.</li>
+  <li>Trong sidebar metadata, có nút mới <strong>"Duplicate issue"</strong> (cạnh "Xóa issue").</li>
+  <li>Click → <code>CreateIssueModal</code> được mount lồng bên trong, prefill toàn bộ field từ issue gốc.</li>
+  <li>Title có prefix <code>"Bản sao — "</code> để dễ phân biệt.</li>
+  <li>User chỉnh sửa rồi bấm <strong>Tạo Issue</strong> như flow tạo thường.</li>
+  <li>Sau khi tạo xong → toast "Đã tạo bản sao XYZ-123", đóng CreateIssueModal, emit <code>updated</code>.</li>
+</ol>
+
+<h3>18.3 Trường được copy</h3>
+<table>
+  <thead><tr><th>Field</th><th>Copy?</th><th>Ghi chú</th></tr></thead>
+  <tbody>
+    <tr><td><code>issue_type</code></td><td>✓</td><td></td></tr>
+    <tr><td><code>title</code></td><td>✓ (có prefix)</td><td>"Bản sao — {original}"</td></tr>
+    <tr><td><code>description</code></td><td>✓</td><td>Full HTML (Tiptap)</td></tr>
+    <tr><td><code>priority</code></td><td>✓</td><td></td></tr>
+    <tr><td><code>story_points</code></td><td>✓</td><td></td></tr>
+    <tr><td><code>estimated_minutes</code></td><td>✓</td><td></td></tr>
+    <tr><td><code>assignee</code></td><td>✓</td><td>User ID</td></tr>
+    <tr><td><code>due_date</code></td><td>✓</td><td>Giữ nguyên (nếu rỗng → mặc định hôm nay từ CreateIssueModal)</td></tr>
+    <tr><td><code>project</code> / <code>sprint</code></td><td>✓</td><td>Truyền qua <code>projectId</code> / <code>sprintId</code> prop</td></tr>
+    <tr><td>Status</td><td>—</td><td>Mặc định <code>todo</code> (issue mới luôn fresh)</td></tr>
+    <tr><td>Comments / Attachments / History</td><td>✗</td><td>Không copy</td></tr>
+    <tr><td>Subtasks</td><td>✗</td><td>Chưa hỗ trợ (có thể bổ sung sau)</td></tr>
+  </tbody>
+</table>
+
+<h3>18.4 File thay đổi</h3>
+<table>
+  <thead><tr><th>File</th><th>Thay đổi</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="file">components/IssueModal.vue</span></td>
+      <td>
+        <ul>
+          <li>Thêm nút "Duplicate issue" trong action panel (cạnh Xóa).</li>
+          <li>Mount <code>&lt;CreateIssueModal&gt;</code> với <code>:prefill</code> khi click.</li>
+          <li>Computed <code>duplicatePrefill</code> map từ issue hiện tại sang shape prefill.</li>
+          <li>Handler <code>onDuplicateCreated</code>: toast + emit updated.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td><span class="file">components/CreateIssueModal.vue</span></td>
+      <td>
+        <ul>
+          <li>Bổ sung prop <code>prefill?</code> (optional object).</li>
+          <li>Khởi tạo reactive form với <code>??</code> fallback từ <code>props.prefill</code> sang default cũ → không break flow tạo bình thường.</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>18.5 UX detail</h3>
+<ul>
+  <li><strong>Nested modal</strong>: CreateIssueModal mount bên trong IssueModal (cả hai Teleport to body) → user thấy form mới đè lên modal cũ, vẫn có animation slide-from-right.</li>
+  <li><strong>Title prefix</strong> "Bản sao — " (truncated 200 ký tự) làm dấu hiệu trực quan, user có thể chỉnh lại.</li>
+  <li><strong>Status default = 'todo'</strong>: dù <code>defaultStatus</code> được truyền từ issue gốc, status mới luôn được reset về <code>todo</code> trong handleSubmit (Status không nằm trong prefill prop).</li>
+  <li>Đóng nested form → quay lại IssueModal cũ (vẫn mở), user có thể tiếp tục hoặc đóng.</li>
+</ul>
+
+<h3>18.6 Tradeoffs</h3>
+<ul>
+  <li><strong>Không có BE endpoint <code>/duplicate</code></strong>: Implement FE-only bằng cách dùng lại API <code>POST /api/issues/</code>. Đỡ phụ thuộc BE, nhưng các quan hệ phức tạp (subtasks/attachments) phải copy thủ công nếu cần.</li>
+  <li><strong>Không copy attachments</strong>: nếu cần, có thể bổ sung sau bằng cách: sau khi tạo issue mới, gọi <code>/api/attachments/duplicate?from=X&amp;to=Y</code> hoặc tải về rồi upload lại.</li>
+  <li><strong>Permission</strong>: Duplicate cần <code>canCreateIssue</code> trong project. Hiện CreateIssueModal đã tự handle qua project membership.</li>
+</ul>
+
+<h2 id="idt-branding">20. Rebrand DevFlow → IDT (logo &amp; màu sắc)</h2>
+
+<h3>20.1 Thời gian</h3>
+<ul>
+  <li>Ngày cập nhật: <strong>2026-05-20</strong>.</li>
+</ul>
+
+<h3>20.2 File đã sửa</h3>
+<ul>
+  <li><span class="file">public/idt-logo.png</span>, <span class="file">public/favicon.png</span> (ảnh gốc từ <code>IDT-Logo-Final.png</code>)</li>
+  <li><span class="file">components/AppLogo.vue</span> (mới)</li>
+  <li><span class="file">tailwind.config.js</span>, <span class="file">assets/css/main.css</span></li>
+  <li><span class="file">layouts/default.vue</span>, <span class="file">layouts/auth.vue</span></li>
+  <li><span class="file">nuxt.config.ts</span>, <span class="file">pages/login.vue</span>, <span class="file">pages/register.vue</span></li>
+  <li><span class="file">components/RichTextEditor.vue</span> (viền chọn ảnh theo màu brand)</li>
+</ul>
+
+<h3>20.3 Thay đổi chính</h3>
+<ul>
+  <li>Thay logo/icon DevFlow bằng <strong>ảnh PNG gốc</strong> (<code>/idt-logo.png</code>), không dùng SVG vector tự vẽ.</li>
+  <li>Palette <code>brand</code> chuyển sang đỏ <code>#C41230</code>; thêm scale <code>metal</code> (xám bạc); nền dark gần đen.</li>
+  <li>Sidebar/auth dùng <code>&lt;AppLogo&gt;</code>; title app: <em>IDT — Integrated Development Technologies</em>.</li>
+  <li>Favicon SVG mới.</li>
+</ul>
+
+<h3>20.4 Hotfix Tailwind <code>metal-*</code></h3>
+<ul>
+  <li>Lỗi: <code>dark:text-metal-100</code> trong <code>@apply</code> (main.css) không được Tailwind sinh class.</li>
+  <li>Fix: đổi <code>dark:text-metal-100</code> → <code>dark:text-gray-100</code> trong body; thêm <code>safelist</code> cho <code>metal-*</code> dùng trong template Vue (Gantt, auth).</li>
+</ul>
+
+<h3>20.5 Verify nhanh</h3>
+<ul>
+  <li>Mở app: sidebar và trang login/register hiển thị logo IDT, nút primary màu đỏ.</li>
+  <li>Dark mode: nền đen/xám, accent đỏ vẫn đọc được.</li>
+  <li>Tab trình duyệt: favicon infinity đỏ–bạc.</li>
+  <li><code>npm run build</code> thành công.</li>
+</ul>
+
+<p class="note"><strong>Logo:</strong> Dùng file <code>Downloads/IDT-Logo-Final.png</code> → <code>public/idt-logo.png</code>. Đã xóa <code>idt-logo.svg</code>, <code>idt-mark.svg</code>, <code>favicon.svg</code>.</p>
+
+<h3>20.6 Thay màu tím cũ (#4f4de5 / rgb(79,77,229)) → đỏ logo</h3>
+<ul>
+  <li><strong>File:</strong> <span class="file">utils/brandColors.ts</span> (mới), <span class="file">UserAvatar.vue</span>, <span class="file">AdminDashboard.vue</span>, <span class="file">projects/*.vue</span>, <span class="file">gantt/[id].vue</span>, <span class="file">assets/css/main.css</span></li>
+  <li><strong>Màu chuẩn:</strong> <code>#C41230</code> (brand-600 Tailwind)</li>
+  <li><strong>Ghi chú:</strong> Nếu vẫn thấy tím, xóa cache <code>.nuxt</code> và chạy lại <code>npm run dev</code>.</li>
+</ul>
+
+<h3>20.7 Trang auth — nền sáng tech</h3>
+<ul>
+  <li><strong>Thời gian:</strong> 2026-05-20</li>
+  <li><strong>File:</strong> <span class="file">layouts/auth.vue</span>, <span class="file">pages/login.vue</span>, <span class="file">pages/register.vue</span></li>
+  <li><strong>Thay đổi:</strong> Nền gradient sáng (slate/white/brand), lưới grid mờ, glow đỏ nhạt; card trắng + shadow; form/input chữ tối; logo bọc khung trắng mờ để nổi trên nền sáng.</li>
+  <li><strong>Verify:</strong> Mở <code>/login</code> — logo và ô đăng nhập tách rõ khỏi background.</li>
+</ul>
+
+<h2 id="editor-image-updates">19. Cập nhật editor ảnh (paste, drop, resize)</h2>
+
+<h3>19.1 Thời gian</h3>
+<ul>
+  <li>Ngày cập nhật: <strong>2026-05-20</strong> (khoảng 15:45 - 15:59 UTC+7).</li>
+</ul>
+
+<h3>19.2 File đã sửa</h3>
+<ul>
+  <li><span class="file">components/RichTextEditor.vue</span></li>
+  <li><span class="file">components/CreateIssueModal.vue</span></li>
+  <li><span class="file">package.json</span></li>
+</ul>
+
+<h3>19.3 Thay đổi chính</h3>
+<ul>
+  <li><strong>Paste ảnh trong editor (Ctrl+V):</strong> bắt ảnh từ clipboard và chèn inline vào nội dung mô tả ngay tại editor.</li>
+  <li><strong>Drop ảnh vào editor:</strong> thả ảnh trực tiếp vào vùng mô tả để chèn ảnh inline.</li>
+  <li><strong>Giữ luồng attachment:</strong> ảnh paste/drop vẫn emit ra ngoài để vào danh sách upload của <code>CreateIssueModal</code>.</li>
+  <li><strong>Hiển thị ảnh ổn định:</strong> bật <code>allowBase64</code> cho TipTap Image extension để render data URL từ clipboard.</li>
+  <li><strong>Resize ảnh trong editor:</strong> hỗ trợ kéo góc dưới-phải ảnh để co/giãn; kích thước mới được lưu vào HTML (attribute <code>width</code>).</li>
+  <li><strong>Selected border:</strong> click ảnh sẽ có viền xanh + glow nhẹ để dễ nhìn vùng resize; khi đang kéo resize vẫn giữ highlight.</li>
+  <li><strong>Dependency:</strong> thêm <code>@tiptap/extension-image</code> vào dependencies.</li>
+</ul>
+
+<h3>19.4 Verify nhanh</h3>
+<ul>
+  <li>Mở <code>CreateIssueModal</code> → focus ô mô tả → nhấn <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>V</kbd> với ảnh copy từ Figma/screenshot: ảnh phải xuất hiện inline.</li>
+  <li>Kéo-thả ảnh trực tiếp vào vùng editor: ảnh xuất hiện inline và đồng thời có thumbnail trong danh sách ảnh đính kèm.</li>
+  <li>Click vào ảnh trong editor: thấy viền xanh rõ; kéo góc dưới-phải để resize.</li>
+  <li>Tạo issue và mở lại issue: kích thước ảnh đã chỉnh vẫn giữ đúng theo nội dung đã lưu.</li>
+  <li>Build kiểm tra: <code>npm run build</code> đã chạy thành công sau các thay đổi.</li>
+</ul>
+
+<h2 id="knowledge-graph">22. Knowledge Graph AI (theo dự án + GitHub)</h2>
+
+<h3>22.1 Thời gian</h3>
+<ul>
+  <li>Ngày cập nhật: <strong>2026-05-20</strong></li>
+</ul>
+
+<h3>22.2 File</h3>
+<ul>
+  <li><span class="file">devflow-be/apps/github_integration/knowledge_graph.py</span> — build graph + Q&amp;A</li>
+  <li><span class="file">devflow-be/apps/projects/views.py</span> — actions <code>knowledge-graph</code>, <code>knowledge-graph/query</code></li>
+  <li><span class="file">components/ProjectKnowledgeGraph.vue</span> — UI graph SVG + chat AI</li>
+  <li><span class="file">pages/projects/[id].vue</span> — tab Knowledge Graph</li>
+</ul>
+
+<h3>22.3 API Knowledge Graph <span class="badge modified">CẬP NHẬT</span></h3>
+<ul>
+  <li><code>GET /api/projects/{id}/knowledge-graph/</code>
+    <ul>
+      <li><code>?repo_id=1</code> — một repo (tương thích cũ)</li>
+      <li><code>?repo_ids=1,2,3</code> — gộp nhiều repo</li>
+      <li><code>?scope=project</code> — tất cả repo active của dự án</li>
+    </ul>
+  </li>
+  <li><code>POST /api/projects/{id}/knowledge-graph/query/</code> — body <code>repo_ids</code> / <code>scope: project</code> giống GET</li>
+  <li><code>GET /api/github/repos/?project_id=</code> — danh sách repo đã gắn (FE tự chọn)</li>
+</ul>
+
+<h3>22.4 UI tab Knowledge Graph <span class="badge modified">CẬP NHẬT</span></h3>
+<ul>
+  <li>Checkbox từng repo + tuỳ chọn <strong>Cả dự án</strong></li>
+  <li>Nút <strong>Vẽ lại sơ đồ</strong> sau khi đổi lựa chọn repo</li>
+  <li>Panel <strong>Phân tích logic (Cursor)</strong> — Admin, dùng cùng repo đã chọn (mục 30)</li>
+  <li><span class="file">components/ProjectKnowledgeGraph.vue</span>, <span class="file">ProjectKnowledgeGraphCursorPanel.vue</span></li>
+</ul>
+
+<h3>22.5 Verify</h3>
+<ul>
+  <li>Chọn 1 repo → graph một repo; chọn 2+ repo hoặc Cả dự án → stats.repositories &gt; 1.</li>
+  <li>Hỏi AI &quot;Tổng quan dự án&quot; với scope project → câu trả lời phản ánh đa repo.</li>
+</ul>
+
+<h2 id="forgot-password">21. Quên mật khẩu (màn login)</h2>
+
+<h3>21.1 Thời gian</h3>
+<ul>
+  <li>Ngày cập nhật: <strong>2026-05-20</strong></li>
+</ul>
+
+<h3>21.2 File đã sửa</h3>
+<ul>
+  <li><span class="file">pages/login.vue</span> — link &quot;Quên mật khẩu?&quot;, form đặt lại (email + mật khẩu mới)</li>
+  <li><span class="file">devflow-be/apps/accounts/views.py</span> — <code>change_password</code> cho phép <code>AllowAny</code> khi gửi <code>email</code></li>
+  <li><span class="file">devflow-be/apps/accounts/serializers.py</span> — <code>ChangePasswordSerializer</code> thêm <code>email</code>, <code>old_password</code> optional</li>
+</ul>
+
+<h3>21.3 API</h3>
+<ul>
+  <li><code>POST /api/auth/users/change_password/</code></li>
+  <li><strong>Quên mật khẩu (chưa đăng nhập):</strong> <code>{ email, new_password, new_password2 }</code></li>
+  <li><strong>Đổi trong Settings (đã đăng nhập):</strong> <code>{ old_password, new_password, new_password2 }</code> — không đổi</li>
+</ul>
+
+<h3>21.4 Verify</h3>
+<ul>
+  <li>Mở <code>/login</code> → &quot;Quên mật khẩu?&quot; → nhập email + mật khẩu mới → thành công → đăng nhập bằng mật khẩu mới.</li>
+  <li>Settings → Đổi mật khẩu vẫn yêu cầu mật khẩu cũ.</li>
+</ul>
+
+<h2 id="integrations">23. Google Drive &amp; Figma — Tích hợp dự án</h2>
+
+<h3>23.1 Mục tiêu</h3>
+<ul>
+  <li>Mỗi dự án có <strong>folder Google Drive chính thức</strong> (Admin/Manager gắn link) và <strong>file Figma chính thức</strong>.</li>
+  <li>Mỗi user kết nối OAuth cá nhân (Google / Figma) để upload và đồng bộ hoạt động.</li>
+  <li>Webhook Drive / Figma ghi activity → gắn mã issue trong tên file (<code>[DEV-42] …</code>).</li>
+  <li>UI: tab <strong>Cài đặt → Tích hợp</strong> trong project; không còn tab riêng trên board.</li>
+</ul>
+
+<h3>23.2 Luồng 3 bước (Drive)</h3>
+<ol>
+  <li><strong>Bước 1 — OAuth cá nhân:</strong> User bấm &quot;Kết nối Google&quot; → <code>GET /api/drive/oauth/start/</code> → redirect Google → <code>/api/drive/oauth/callback/</code> → lưu <code>GoogleDriveAccount</code>.</li>
+  <li><strong>Bước 2 — Gắn folder dự án:</strong> Admin/Manager dán URL folder → <code>POST /api/projects/{id}/integrations/drive/</code> → lưu <code>drive_folder_id</code> trên <code>Project</code>.</li>
+  <li><strong>Bước 3 — Upload / theo dõi:</strong> Tab Tài liệu upload file hoặc tạo Google Doc/Sheet/Slides trong folder đó.</li>
+</ol>
+
+<h3>23.3 Backend — file chính</h3>
+<table>
+  <thead><tr><th>File</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr><td><span class="file">apps/projects/models.py</span> + migration <code>0004_project_integrations</code></td><td><code>drive_folder_*</code>, <code>figma_file_*</code>, <code>linked_by/at</code></td></tr>
+    <tr><td><span class="file">apps/projects/integration_utils.py</span></td><td>Parse URL folder/file; <code>user_can_link_drive/figma</code>; <code>user_can_upload_to_project_drive</code></td></tr>
+    <tr><td><span class="file">apps/projects/integration_views.py</span></td><td>Mixin <code>ProjectIntegrationMixin</code> trên <code>ProjectViewSet</code></td></tr>
+    <tr><td><span class="file">apps/projects/drive_upload.py</span></td><td>Upload binary + tạo Google native files</td></tr>
+    <tr><td><span class="file">apps/google_drive_integration/</span></td><td>OAuth, API client, webhook, activities</td></tr>
+    <tr><td><span class="file">apps/figma_integration/</span></td><td>OAuth, webhook passcode, activities</td></tr>
+  </tbody>
+</table>
+
+<h3>23.4 API project integrations</h3>
+<table>
+  <thead><tr><th>Method</th><th>URL</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/projects/{id}/integrations/</code></td><td>Trạng thái drive/figma + quyền <code>can_link_*</code></td></tr>
+    <tr><td>POST</td><td><code>/api/projects/{id}/integrations/drive/</code></td><td>Liên kết folder (<code>folder_url</code> hoặc <code>folder_id</code>)</td></tr>
+    <tr><td>POST</td><td><code>/api/projects/{id}/integrations/drive/unlink/</code></td><td>Gỡ folder khỏi dự án (không xóa folder trên Google)</td></tr>
+    <tr><td>DELETE</td><td><code>/api/projects/{id}/integrations/drive/</code></td><td>Legacy — gọi cùng logic unlink</td></tr>
+    <tr><td>POST/DELETE</td><td><code>/api/projects/{id}/integrations/figma/</code> · <code>…/figma/unlink/</code></td><td>Liên kết / gỡ file Figma</td></tr>
+    <tr><td>GET</td><td><code>/api/projects/{id}/integrations/activities/?date=</code></td><td>Activity Drive + Figma theo ngày</td></tr>
+    <tr><td>GET</td><td><code>/api/drive/oauth/start/</code></td><td>Trả <code>authorize_url</code> (JWT)</td></tr>
+    <tr><td>GET</td><td><code>/api/figma/oauth/start/</code></td><td>Tương tự Figma</td></tr>
+  </tbody>
+</table>
+
+<h3>23.5 Frontend — file chính</h3>
+<table>
+  <thead><tr><th>File</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr><td><span class="file">components/ProjectIntegrationsPanel.vue</span></td><td>Tab Settings: OAuth + gắn folder/file</td></tr>
+    <tr><td><span class="file">components/ProjectDocumentsPanel.vue</span></td><td>Tab Tài liệu: danh sách + upload</td></tr>
+    <tr><td><span class="file">composables/useIntegrationOAuth.ts</span></td><td><code>startOAuth('drive'|'figma')</code></td></tr>
+    <tr><td><span class="file">pages/integrations/drive.vue</span> · <span class="file">figma.vue</span></td><td>Landing sau OAuth callback</td></tr>
+    <tr><td><span class="file">pages/projects/[id].vue</span></td><td>Tabs: Overview, Issues, Knowledge Graph, Members, <strong>Documents</strong>, <strong>Settings</strong>; <code>?tab=</code></td></tr>
+    <tr><td><span class="file">pages/board/[id].vue</span></td><td>Search issue; admin filter assignee; banner folder Drive</td></tr>
+  </tbody>
+</table>
+
+<h3>23.6 Knowledge Graph 3D (canvas)</h3>
+<ul>
+  <li>Đã bỏ dep <code>three</code> / <code>3d-force-graph</code> (CDN lỗi trên server).</li>
+  <li><span class="file">KnowledgeGraph3DLight.client.vue</span> — canvas 2.5D; <span class="file">KnowledgeGraph2DZoom.client.vue</span> — pan/zoom; <span class="file">KnowledgeGraphViewer.client.vue</span> — chuyển 2D/3D, phím <kbd>F</kbd> fullscreen.</li>
+</ul>
+
+<h2 id="documents-tab">24. Tab Tài liệu &amp; upload Drive</h2>
+
+<h3>24.1 API</h3>
+<ul>
+  <li><code>GET /api/projects/{id}/documents/?days=90&amp;source=drive|figma&amp;q=</code> — catalog + meta (<code>drive_linked</code>, <code>can_upload_drive</code>, <code>drive_can_write</code>…)</li>
+  <li><code>POST /api/projects/{id}/documents/upload/</code> — multipart field <code>file</code>, optional <code>issue_key</code></li>
+  <li><code>POST /api/projects/{id}/documents/create/</code> — body <code>{ kind: document|spreadsheet|presentation|folder, name, issue_key? }</code></li>
+  <li><code>GET …/documents/{drive_file_id}/preview/</code> · <code>…/preview/content/</code> · <code>…/edit-history/</code> — xem trong app (mục <a href="#drive-preview">29</a>)</li>
+  <li><code>GET …/integrations/drive/history/?drive_file_id=</code> — lọc timeline theo file</li>
+</ul>
+
+<h3>24.2 Điều kiện hiện form upload</h3>
+<ul>
+  <li><code>drive_linked</code> — đã gắn folder dự án</li>
+  <li><code>drive_account_connected</code> — user đã OAuth Google</li>
+  <li><code>drive_can_write</code> — token có scope <code>https://www.googleapis.com/auth/drive</code> (full)</li>
+  <li><code>can_upload_drive</code> — member không phải viewer (admin luôn được)</li>
+</ul>
+
+<h3>24.3 Fix upload Google (Parse Error)</h3>
+<p>Google Drive multipart upload bắt buộc:</p>
+<ul>
+  <li>URL: <code>https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart</code> (không dùng <code>drive/v3/files</code>)</li>
+  <li>Body: <code>multipart/related</code> (không dùng <code>multipart/form-data</code> của <code>requests.files=</code>)</li>
+</ul>
+<p>Commit BE: <code>bfd6db8</code> — <span class="file">api_client.py</span> hàm <code>_build_multipart_related_body()</code>.</p>
+
+<h3>24.4 Scope OAuth Drive</h3>
+<p>Đã đổi từ <code>drive.file</code> sang <code>drive</code> (full) vì <code>drive.file</code> không ghi được vào folder admin dán URL sẵn. User đã kết nối trước đó phải <strong>Kết nối lại Google</strong>. Commit: <code>9c70f94</code>.</p>
+
+<h2 id="company-oauth">25. Cài đặt công ty — OAuth Google / Figma</h2>
+
+<h3>25.1 Mục tiêu</h3>
+<p>Admin cấu hình <code>GOOGLE_CLIENT_ID</code>, <code>FIGMA_CLIENT_ID</code>, secrets, redirect URI trên UI thay vì chỉ file <code>.env</code>.</p>
+
+<h3>25.2 Backend</h3>
+<ul>
+  <li>Model <code>CompanySettings</code> (pk=1): <code>google_*</code>, <code>figma_*</code>, <code>integration_frontend_url</code></li>
+  <li>Migration: <code>0003_companysettings_integrations_oauth.py</code></li>
+  <li><span class="file">apps/accounts/integration_config.py</span> — DB trước, fallback <code>settings.py</code> / env</li>
+  <li><code>GET|PATCH /api/auth/company-settings/</code> — PATCH chỉ admin; secret để trống = giữ giá trị cũ</li>
+</ul>
+
+<h3>25.3 Frontend</h3>
+<ul>
+  <li><span class="file">pages/settings/company.vue</span> — form OpenAI, GitHub org, Google OAuth, Figma OAuth, <code>FRONTEND_URL</code></li>
+  <li>Badge <strong>Sẵn sàng</strong> / <strong>Chưa đủ</strong> khi đủ client id + secret + redirect URI</li>
+</ul>
+
+<h3>25.4 Giá trị cấu hình mẫu</h3>
+<pre><code># Google — OAuth client Web application (KHÔNG dùng API Key)
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_OAUTH_REDIRECT_URI=https://api.&lt;domain&gt;/api/drive/oauth/callback/
+
+# Figma — https://www.figma.com/developers/apps
+FIGMA_CLIENT_ID=...
+FIGMA_CLIENT_SECRET=...
+FIGMA_OAUTH_REDIRECT_URI=https://api.&lt;domain&gt;/api/figma/oauth/callback/
+FIGMA_WEBHOOK_PASSCODE=...   # tuỳ chọn
+
+# Sau OAuth redirect về FE
+FRONTEND_URL=https://app.&lt;domain&gt;</code></pre>
+
+<h2 id="system-admin">26. Quyền Admin hệ thống (2026-05-20)</h2>
+
+<h3>26.1 Tóm tắt</h3>
+<table>
+  <thead><tr><th>Hành động</th><th>Admin (<code>User.role=admin</code>)</th><th>User khác</th></tr></thead>
+  <tbody>
+    <tr><td>Xem / vào mọi project</td><td>✓</td><td>Chỉ project là member</td></tr>
+    <tr><td>Tạo project</td><td>✓</td><td>✗ (403)</td></tr>
+    <tr><td>Xóa project</td><td>✓ Danger Zone</td><td>✗ (kể cả Owner)</td></tr>
+    <tr><td>Sửa cài đặt project</td><td>✓</td><td>Owner / Manager</td></tr>
+    <tr><td>Gắn folder Drive / file Figma</td><td>✓</td><td>Owner / Manager (hoặc admin)</td></tr>
+    <tr><td>Cài đặt công ty OAuth</td><td>✓</td><td>✗</td></tr>
+  </tbody>
+</table>
+
+<h3>26.2 Backend commits (tham chiếu)</h3>
+<ul>
+  <li><code>67a1548</code> — chỉ admin tạo project</li>
+  <li><code>5a82e10</code> — admin full access + delete-only; <code>apps/projects/access.py</code></li>
+  <li><code>8abc280</code> — unlink folder POST <code>…/drive/unlink/</code></li>
+</ul>
+
+<h3>26.3 Frontend commits</h3>
+<ul>
+  <li><code>da2cc4f</code> — ẩn nút tạo project non-admin</li>
+  <li><code>7b31ced</code> — admin bypass middleware; delete UI chỉ admin</li>
+  <li><code>5323753</code> — unlink POST + error feedback</li>
+</ul>
+
+<h3>26.4 Serializer</h3>
+<p><code>ProjectSerializer.current_user_role</code> trả <code>"admin"</code> cho user admin (kể cả không nằm trong <code>project_members</code>).</p>
+
+<h2 id="oauth-troubleshoot">27. Troubleshooting OAuth &amp; Drive</h2>
+
+<h3>27.1 redirect_uri_mismatch</h3>
+<p>Chuỗi trong <strong>Cài đặt công ty</strong> và <strong>Google Cloud → Authorized redirect URIs</strong> phải khớp từng ký tự:</p>
+<pre><code>https://api.&lt;domain&gt;/api/drive/oauth/callback/</code></pre>
+<p>Lỗi thường gặp: dùng URL frontend, thiếu <code>/api/drive/</code>, thiếu <code>/</code> cuối, <code>http</code> vs <code>https</code>, <code>localhost</code> vs <code>127.0.0.1</code>.</p>
+
+<h3>27.2 Access blocked: request is invalid</h3>
+<ul>
+  <li>Redirect URI trống hoặc sai</li>
+  <li>Dùng API Key thay vì OAuth Client ID (Web application)</li>
+  <li>Chưa cấu hình OAuth consent screen / Test users</li>
+</ul>
+
+<h3>27.3 Upload / mở folder không được</h3>
+<ol>
+  <li>Đã <strong>gắn folder dự án</strong> chưa? (Bước 2 tích hợp)</li>
+  <li>Đã <strong>Kết nối lại Google</strong> sau khi đổi scope <code>drive</code>?</li>
+  <li>Tài khoản Google có quyền <strong>Editor</strong> trên folder?</li>
+  <li>Lỗi <code>Parse Error</code> → deploy BE <code>bfd6db8</code>+</li>
+</ol>
+
+<h3>27.4 Gỡ liên kết folder không hoạt động</h3>
+<ul>
+  <li>Dùng <code>POST /api/projects/{id}/integrations/drive/unlink/</code> (FE đã đổi từ DELETE)</li>
+  <li>Admin không trong <code>members</code> trước đây bị 404 — đã fix <code>get_queryset</code> cho admin</li>
+</ul>
+
+<h3>27.5 Deploy checklist</h3>
+<pre><code># Backend
+python manage.py migrate   # accounts 0003, projects 0004
+# Restart BE + FE
+# Admin: Settings → Công ty → OAuth
+# Mỗi user: Kết nối lại Google nếu upload fail
+# Admin: Settings project → gắn folder Drive</code></pre>
+
+<h2 id="issue-ai-brief">28. Gợi ý triển khai issue (AI — Giai đoạn 1)</h2>
+
+<p>Khi dev mở issue, có thể bấm <strong>Lấy gợi ý</strong> để hệ thống đọc mô tả issue, commit/PR GitHub liên kết và Knowledge Graph (repo đầu tiên active), rồi trả về hướng triển khai bằng tiếng Việt.</p>
+
+<h3>28.1 API</h3>
+<pre><code>POST /api/issues/{id}/ai-brief/
+Body (optional): { "repo_id": 123 }   # GitHubRepository.id
+
+Response:
+{
+  "brief": "### Tóm tắt\n...",
+  "mode": "ai" | "rule",
+  "sources": ["openai", "issue", "knowledge_graph", "github"],
+  "generated_at": "2026-05-20T10:00:00+00:00",
+  "openai_configured": true,
+  "issue_id": 42,
+  "issue_key": "DFW-42"
+}</code></pre>
+<p>GET issue detail (<code>/api/issues/{id}/</code>) trả thêm <code>ai_brief</code>, <code>ai_brief_generated_at</code> (lần tạo gần nhất).</p>
+
+<h3>28.2 Backend</h3>
+<ul>
+  <li><span class="file">apps/issues/ai_brief.py</span> — <code>generate_issue_ai_brief()</code></li>
+  <li><span class="file">apps/issues/views.py</span> — action <code>ai_brief</code></li>
+  <li><span class="file">apps/issues/migrations/0005_issue_ai_brief.py</span></li>
+  <li>OpenAI: cùng cấu hình Cài đặt công ty / env như Knowledge Graph (<code>_resolve_openai_credentials</code>)</li>
+  <li>Không có API key → rule-based (tóm tắt issue + commit + checklist)</li>
+</ul>
+
+<h3>28.3 Frontend</h3>
+<ul>
+  <li><span class="file">components/IssueAiBriefPanel.vue</span> — nút Lấy gợi ý / Làm mới</li>
+  <li><span class="file">components/IssueModal.vue</span> — panel dưới Mô tả</li>
+  <li><span class="file">pages/issues/[id].vue</span> — cùng panel</li>
+</ul>
+
+<h3>28.4 Deploy</h3>
+<pre><code>python manage.py migrate   # issues 0005
+# Admin: Settings → Công ty → OpenAI API key (để mode=ai)</code></pre>
+
+<h3>28.5 Giai đoạn tiếp theo (chưa làm)</h3>
+<ul>
+  <li>Tự động gợi ý khi giao issue (Celery + notification)</li>
+</ul>
+
+<h2 id="drive-preview">29. Xem file Drive trong DevFlow &amp; lịch sử chỉnh sửa <span class="badge new">MỚI</span></h2>
+
+<h3>29.1 Mục tiêu</h3>
+<ul>
+  <li>Mở file Google Drive của dự án <strong>trong DevFlow</strong> (iframe Google hoặc proxy PDF/ảnh), không bắt buộc sang tab Drive.</li>
+  <li>Bảng <strong>Lịch sử thay đổi Drive</strong>: lọc tên file, click mở preview, hiển thị <code>revision_id</code> khi có.</li>
+  <li>Sidebar preview: revision Google (<code>revisions.list</code>) + sự kiện DevFlow (<code>GoogleDriveActivity</code>).</li>
+</ul>
+
+<h3>29.2 API (ProjectViewSet mixin)</h3>
+<table>
+  <thead><tr><th>Method</th><th>URL</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/projects/{id}/documents/{drive_file_id}/preview/</code></td><td>Metadata: <code>preview_mode</code> (<code>iframe</code>|<code>proxy</code>), <code>embed_url</code>, <code>can_preview_in_app</code></td></tr>
+    <tr><td>GET</td><td><code>/api/projects/{id}/documents/{drive_file_id}/preview/content/</code></td><td>Stream nội dung (Bearer JWT) — PDF/ảnh/export Google</td></tr>
+    <tr><td>GET</td><td><code>/api/projects/{id}/documents/{drive_file_id}/edit-history/</code></td><td><code>google_revisions</code> + <code>devflow_events</code></td></tr>
+    <tr><td>GET</td><td><code>/api/projects/{id}/integrations/drive/history/?days=&amp;drive_file_id=</code></td><td>Timeline; lọc theo file</td></tr>
+    <tr><td>GET</td><td><code>/api/projects/{id}/documents/</code></td><td>Catalog thêm <code>drive_file_id</code>, <code>view_in_app</code></td></tr>
+  </tbody>
+</table>
+<p>User cần <strong>OAuth Google</strong> (token DevFlow) để BE gọi Drive API. File phải thuộc dự án (activity hoặc <code>GoogleDriveFile</code>).</p>
+
+<h3>29.3 Backend</h3>
+<ul>
+  <li><span class="file">apps/google_drive_integration/preview_service.py</span> — embed URL, export/proxy bytes, <code>list_drive_revisions</code></li>
+  <li><span class="file">apps/projects/integration_views.py</span> — actions preview / content / edit-history; <code>_drive_file_belongs_to_project</code></li>
+</ul>
+
+<h3>29.4 Frontend</h3>
+<ul>
+  <li><span class="file">components/DriveFilePreviewModal.vue</span> — modal: iframe / PDF blob / lịch sử</li>
+  <li><span class="file">components/ProjectDocumentsPanel.vue</span> — nút <strong>Xem trong DevFlow</strong></li>
+  <li><span class="file">components/ProjectDriveChangeHistory.vue</span> — lọc + click file → preview</li>
+</ul>
+
+<h2 id="cursor-logic">30. Phân tích logic dự án bằng Cursor Cloud Agent <span class="badge new">MỚI</span></h2>
+
+<h3>30.1 Mục tiêu &amp; vị trí UI</h3>
+<ul>
+  <li><strong>Chỉ Admin hệ thống</strong> (<code>User.role === 'admin'</code>).</li>
+  <li><strong>Vị trí:</strong> Tab <strong>Knowledge Graph</strong> trong dự án — <em>không</em> còn menu sidebar riêng.</li>
+  <li><strong>Đầu vào:</strong> Repo đã gắn dự án (checkbox), <strong>Cả dự án</strong> (tối đa 20 repo / 1 Cursor agent), hoặc một repo.</li>
+  <li><strong>Đầu ra:</strong> Markdown tiếng Việt → sau <strong>duyệt</strong> ghim vào <code>ProjectImplementorNote</code>.</li>
+  <li>Cursor Cloud Agent: <code>mode: plan</code>, <code>autoCreatePR: false</code>.</li>
+</ul>
+
+<h3>30.2 Cấu hình (không dùng env)</h3>
+<ul>
+  <li><strong>Cài đặt → Cursor</strong> (<code>/settings/cursor</code>, Admin): lưu <code>cursor_api_key</code>, <code>cursor_logic_model</code> trong <code>CompanySettings</code> (DB).</li>
+  <li>Không fallback <code>CURSOR_API_KEY</code> env — bắt buộc cấu hình trên UI.</li>
+  <li>API công ty: <code>GET/PATCH /api/auth/company-settings/</code> — fields <code>cursor_api_key_set</code>, <code>cursor_api_key_masked</code>, <code>cursor_logic_model</code>.</li>
+</ul>
+
+<h3>30.3 API phân tích &amp; duyệt</h3>
+<table>
+  <thead><tr><th>Method</th><th>URL</th><th>Mô tả</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/cursor-logic-analysis/?project_id=</code></td><td>Danh sách job (Admin)</td></tr>
+    <tr><td>POST</td><td><code>/api/cursor-logic-analysis/</code></td><td>Body bắt buộc: <code>project_id</code>; <code>repo_ids: [1,2]</code> hoặc <code>scope: "project"</code></td></tr>
+    <tr><td>PATCH</td><td><code>/api/cursor-logic-analysis/{id}/</code></td><td>Sửa <code>content_markdown</code> khi <code>pending_review</code></td></tr>
+    <tr><td>POST</td><td><code>…/approve/</code></td><td><code>project_id</code>, <code>content_markdown?</code>, <code>publish: true</code> → ghim Implementor Note</td></tr>
+    <tr><td>POST</td><td><code>…/reject/</code></td><td>Từ chối (<code>reason?</code>)</td></tr>
+    <tr><td>POST</td><td><code>…/publish/</code></td><td>Ghim lại nếu đã duyệt chưa publish</td></tr>
+    <tr><td>POST</td><td><code>…/retry/</code></td><td>Chạy lại phân tích</td></tr>
+  </tbody>
+</table>
+
+<h3>30.4 Backend</h3>
+<ul>
+  <li><span class="file">apps/projects/models.py</span> — <code>ProjectLogicAnalysis</code></li>
+  <li><span class="file">apps/projects/cursor_api_client.py</span> — REST Cursor <code>POST /v1/agents</code>, poll run, SSE assistant text</li>
+  <li><span class="file">apps/projects/cursor_logic_analysis.py</span> — prompt, enqueue (Celery hoặc thread)</li>
+  <li><span class="file">apps/projects/cursor_analysis_views.py</span> — ViewSet Admin-only</li>
+  <li>Migrations: <code>0006</code> analysis · <code>0007</code> review + implementor cursor fields · <code>0008</code> scope/repos_json · accounts <code>0005</code>–<code>0006</code></li>
+  <li><span class="file">cursor_implementor_publish.py</span> — Markdown → HTML, marker <code>CURSOR_LOGIC_START/END</code></li>
+  <li><span class="file">implementor_note_tasks.py</span> — rebuild GitHub vẫn giữ <code>cursor_logic_html</code></li>
+</ul>
+
+<h3>30.5 Frontend (trong tab Knowledge Graph)</h3>
+<ul>
+  <li><span class="file">components/ProjectKnowledgeGraph.vue</span> — chọn 1/nhiều repo hoặc <strong>Cả dự án</strong>; nút <strong>Vẽ lại sơ đồ</strong></li>
+  <li><span class="file">components/ProjectKnowledgeGraphCursorPanel.vue</span> — phân tích Cursor + duyệt (Admin)</li>
+  <li><span class="file">pages/settings/cursor.vue</span> — cấu hình API key</li>
+  <li>Đã gỡ menu sidebar <code>/cursor-analysis</code> (redirect hướng dẫn)</li>
+</ul>
+
+<h3>30.6 Duyệt → Implementor Note <span class="badge new">MỚI</span></h3>
+<ol>
+  <li>Phân tích <code>completed</code> → <code>review_status: pending_review</code></li>
+  <li>Admin xem/sửa Markdown → <code>PATCH /api/cursor-logic-analysis/{id}/</code></li>
+  <li><code>POST …/approve/</code> — body <code>project_id</code>, <code>content_markdown?</code> → duyệt + ghim vào <code>ProjectImplementorNote</code> (marker <code>CURSOR_LOGIC_START/END</code>)</li>
+  <li><code>POST …/reject/</code> — từ chối, không ghim</li>
+  <li>Rebuild Implementor Note từ GitHub vẫn <strong>giữ</strong> phần Cursor đã duyệt</li>
+</ol>
+<p>BE: <span class="file">cursor_implementor_publish.py</span> · fields <code>cursor_logic_*</code> trên implementor note.</p>
+
+<h3>30.7 Luồng vận hành (tóm tắt)</h3>
+<ol>
+  <li>Admin: <strong>Cài đặt → Cursor</strong> — lưu API key (DB).</li>
+  <li>Mở dự án → <strong>Knowledge Graph</strong> — chọn repo hoặc <strong>Cả dự án</strong>.</li>
+  <li><strong>Vẽ lại sơ đồ</strong> (tuỳ chọn) → <strong>Phân tích bằng Cursor</strong>.</li>
+  <li>Khi <code>completed</code> + <code>pending_review</code>: sửa Markdown → <strong>Duyệt &amp; ghim Implementor Note</strong>.</li>
+  <li>Xem: <code>/projects/{id}/implementor-note</code> — mục <em>Phân tích logic dự án (Cursor — đã duyệt)</em>.</li>
+</ol>
+
+<h3>30.8 Deploy</h3>
+<pre><code>python manage.py migrate projects accounts
+
+# BE: c6fa355 · d7f0840 · 49594e5
+# FE: 0db393e · 7145030 · b6f3476
+# Doc: devflow-fe/implementor-note.html (file này)</code></pre>
+
+<h2 id="ai-estimate">31. AI Estimate — Story Point (Giai đoạn 2) <span class="badge new">MỚI</span></h2>
+<p style="background:#fffbe6;border-left:3px solid #f5a623;padding:6px 10px"><strong>Cập nhật:</strong> AI nay <strong>tự áp dụng SP gợi ý vào ô Story Point</strong> của task (không cần confirm tay) và <strong>hạ 1 bậc Fibonacci</strong> để khích lệ nhân sự (vd 8→5; cấu hình <code>AI_ESTIMATE_SP_DOWNGRADE_STEPS</code>). Tạo task (task/story/bug) cũng tự chạy AI estimate nền → SP tự điền. Panel hiện "Đã áp dụng X SP (hạ từ Y để khích lệ)". Nếu có người confirm tay thì giữ nguyên, không ghi đè.</p>
+
+<p>Trong issue, tab <strong>🤖 AI Estimate</strong>: bấm <strong>Phân tích AI</strong> để AI đọc mô tả issue + lịch sử task tương tự (cùng project, đã done) rồi gợi ý Story Point theo thang Fibonacci, kèm 4 chiều (Complexity / Effort / Uncertainty / Risk), độ tin cậy và lý do tiếng Việt. Dev/PM bấm <strong>Đồng ý</strong> hoặc chọn SP khác (bắt buộc nhập lý do) — cập nhật thẳng <code>issue.story_points</code>.</p>
+
+<p><strong>Kiến trúc:</strong> dùng OpenAI qua <code>urllib</code> + credential Cài đặt công ty (giống mục 28, <code>_resolve_openai_credentials</code>), <strong>không</strong> thêm Anthropic SDK. Thiếu key/API lỗi → tự rơi về <strong>rule-based</strong> nên luôn có estimate.</p>
+
+<h3>31.1 API</h3>
+<pre><code>POST /api/issues/{id}/ai_estimate/        # phân tích / tạo lại
+POST /api/issues/{id}/confirm_estimate/   # body: { sp_final, override_reason }
+GET  /api/projects/{id}/estimate-review/  # outlier (lệch ≥2 bậc) + needs_clarification cho PM
+
+# Issue list/board/detail trả thêm field "ai_estimate":
+#   list/board (compact): { sp_suggested, sp_final, confidence, needs_clarification, auto_confirmed }
+#   detail (full): + 4 chiều, reasoning, similar_tasks, override_reason, confirmed_by…</code></pre>
+
+<h3>31.2 Backend</h3>
+<ul>
+  <li><span class="file">apps/issues/models.py</span> — model <code>AIEstimate</code> (OneToOne issue)</li>
+  <li><span class="file">apps/issues/ai_estimate_service.py</span> — <code>analyze_issue_estimate()</code> / <code>confirm_issue_estimate()</code> / fallback rule-based</li>
+  <li><span class="file">apps/issues/tasks.py</span> — Celery <code>trigger_ai_estimate</code>, <code>auto_confirm_estimate</code> (24h), <code>sweep_auto_confirm_estimates</code> (beat mỗi giờ)</li>
+  <li><span class="file">apps/issues/views.py</span> — action <code>ai_estimate</code>, <code>confirm_estimate</code> (+ <code>select_related('ai_estimate')</code>)</li>
+  <li><span class="file">apps/projects/views.py</span> — action <code>estimate_review</code></li>
+  <li><span class="file">apps/issues/migrations/0007_aiestimate.py</span> + <span class="file">notifications/0002</span> (type <code>ai_estimate_ready</code>)</li>
+  <li>Luồng tạo issue (<code>perform_create</code>) giữ nguyên — estimate chạy on-demand, không auto-trigger.</li>
+</ul>
+
+<h3>31.3 Frontend</h3>
+<ul>
+  <li><span class="file">components/AIEstimatePanel.vue</span> — SP + confidence bar + 4 chiều + similar tasks + confirm/override + cảnh báo needs_clarification</li>
+  <li><span class="file">components/IssueModal.vue</span> — tab "🤖 AI Estimate"</li>
+  <li><span class="file">components/KanbanCard.vue</span> + <span class="file">components/IssueCard.vue</span> — badge 🤖 SP (xanh=đã chốt, vàng=chờ), tooltip confidence</li>
+</ul>
+
+<h3>31.4 Deploy</h3>
+<pre><code>python manage.py migrate issues notifications   # issues 0007 + notifications 0002
+# Admin: Settings → Công ty → OpenAI API key (để dùng OpenAI thay rule-based)
+# Test: python manage.py test apps.issues.tests_ai_estimate   # 9 test PASS</code></pre>
+
+<h2 id="org-dept-position">32. Phòng ban &amp; Vị trí — KPI tùy biến <span class="badge new">MỚI</span></h2>
+<p>Cho phép Admin <strong>tự định nghĩa cơ cấu tổ chức</strong> (phòng ban + vị trí) thay vì fix cứng. Mỗi <strong>Vị trí</strong> gắn một <strong>loại KPI</strong> (<code>kpi_type</code>) quyết định cách tính lương khoán; payroll sẽ dẫn xuất theo Vị trí của nhân sự thay map cứng theo role.</p>
+<p><strong>Quan trọng:</strong> 5 role phân quyền cũ (admin/manager/developer/tester/viewer) <strong>GIỮ NGUYÊN</strong> — không đụng logic auth/middleware/permission. Phòng ban/Vị trí là chiều dữ liệu HR + KPI bổ sung.</p>
+
+<h3>32.1 Dùng thế nào</h3>
+<ul>
+  <li><strong>Cài đặt → Phòng ban &amp; Vị trí</strong> (chỉ Admin): tab Phòng ban + tab Vị trí, thêm/sửa/xóa.</li>
+  <li>Vị trí gồm: phòng ban, tên, mã, <strong>Loại KPI</strong> (developer/tester/ba/pm/designer/manual/none) + <strong>bậc mặc định</strong> (junior/mid/senior/tech_lead).</li>
+  <li><strong>Members</strong>: Admin gán Vị trí cho từng nhân sự (dropdown theo phòng ban). Gán vị trí tự đồng bộ phòng ban.</li>
+  <li>Payroll: <code>payroll_role_for_user</code> ưu tiên <code>position.kpi_type</code>; chưa gán vị trí thì fallback theo role cũ (tương thích ngược).</li>
+</ul>
+
+<h3>32.2 API</h3>
+<pre><code>GET/POST/PATCH/DELETE /api/auth/departments/      # CRUD phòng ban (ghi: admin)
+GET/POST/PATCH/DELETE /api/auth/positions/        # CRUD vị trí   (ghi: admin)
+PATCH /api/auth/users/{id}/assign-org/            # body: { position, department_ref } — admin gán
+# User payload trả thêm: department_ref, position, department_name, position_name, kpi_type</code></pre>
+
+<h3>32.3 Backend</h3>
+<ul>
+  <li><span class="file">apps/accounts/models.py</span> — model <code>Department</code>, <code>Position</code> (kpi_type + default_level); User thêm FK <code>department_ref</code>, <code>position</code> (giữ <code>department</code> CharField cũ).</li>
+  <li><span class="file">apps/accounts/serializers.py</span> — <code>DepartmentSerializer</code>, <code>PositionSerializer</code>; User serializers thêm field tổ chức.</li>
+  <li><span class="file">apps/accounts/views.py</span> — <code>DepartmentViewSet</code>, <code>PositionViewSet</code> (<code>IsSystemAdminOrReadOnly</code>), action <code>assign_org</code>.</li>
+  <li><span class="file">apps/payroll/metrics.py</span> + <span class="file">services.py</span> — KPI dẫn xuất theo Position (fallback role cũ), level theo <code>default_level</code>.</li>
+  <li><span class="file">apps/accounts/migrations/0007_*</span> — Department, Position + FK User.</li>
+</ul>
+
+<h3>32.4 Frontend</h3>
+<ul>
+  <li><span class="file">composables/useOrg.ts</span> — CRUD + danh sách dùng chung (singleton) + <code>assignUserOrg</code>.</li>
+  <li><span class="file">pages/settings/org.vue</span> — trang admin tab Phòng ban / Vị trí (CRUD modal).</li>
+  <li><span class="file">pages/settings/index.vue</span> — nav "Phòng ban &amp; Vị trí" (admin).</li>
+  <li><span class="file">pages/members.vue</span> — hiển thị vị trí + dropdown gán (admin).</li>
+</ul>
+
+<h3>32.5 Deploy</h3>
+<pre><code>python manage.py migrate accounts          # accounts 0007 (Department, Position, FK User)
+# Test: python manage.py test apps.accounts.tests_org   # 10 test PASS</code></pre>
+
+<h2 id="my-created">33. My Issues — tab “Tôi tạo” + Tốc độ/Tiến độ/Hoàn thành <span class="badge new">MỚI</span></h2>
+<p>Trang <strong>My Issues</strong> trước chỉ hiện issue được <em>giao</em> (assignee) → Epic/Story do mình tạo không thấy. Bổ sung toggle <strong>Được giao | Tôi tạo</strong>. Tab “Tôi tạo” liệt kê mọi issue <code>reporter = me</code> (gồm Epic/Story) kèm:</p>
+<ul>
+  <li><strong>⚡ Tốc độ (30 ngày)</strong>: tổng SP hoàn thành trong 30 ngày + số issue done.</li>
+  <li><strong>📊 Tiến độ (SP)</strong>: % story point đã xong / tổng.</li>
+  <li><strong>✅ Mức độ hoàn thành</strong>: % issue done / tổng.</li>
+  <li>Mỗi dòng có <strong>thanh tiến độ</strong> (Epic rollup theo story/task con; Story/Task theo subtask, không con thì suy từ status) + “x/y con · a/b SP”.</li>
+</ul>
+
+<h3>33.1 API</h3>
+<pre><code>GET /api/issues/my-created/?project=&amp;type=&amp;status=
+# → { summary: {total, done, completion_pct, total_story_points, done_story_points,
+#                story_points_completion_pct, velocity_30d_sp, velocity_30d_count,
+#                in_progress, todo, overdue, by_type},
+#     results: [ ...issue + "progress": {completion_pct, child_count, child_done_count,
+#                done_story_points, total_story_points, ...} ] }</code></pre>
+
+<h3>33.2 Files</h3>
+<ul>
+  <li><span class="file">apps/issues/epic_utils.py</span> — <code>compute_issue_progress()</code> (Epic rollup + Story/Task theo subtask/status).</li>
+  <li><span class="file">apps/issues/views.py</span> — action <code>my_created</code> (reporter = me, tính summary + progress).</li>
+  <li><span class="file">pages/my-issues.vue</span> — toggle Được giao / Tôi tạo, summary card, cột Tiến độ (progress bar).</li>
+  <li><span class="file">apps/issues/tests_my_created.py</span> — 3 test PASS.</li>
+</ul>
+
+<h2 id="backlog-optimistic">34. Backlog kéo-thả mượt — optimistic update (không reload) <span class="badge new">MỚI</span></h2>
+<p><strong>Vấn đề:</strong> kéo task từ backlog sang sprint xong phải đợi load lại mới kéo tiếp được. Nguyên nhân: <code>moveIssueToSprint</code> gọi <code>updateIssue</code> rồi <code>refreshIssueLists()</code> reload cả backlog + sprint → bật <code>sprintLoading</code> → <code>SprintSection</code> vào trạng thái loading, chặn kéo.</p>
+<p><strong>Cách sửa (<span class="file">pages/backlog/[id].vue</span>):</strong></p>
+<ul>
+  <li>Thêm <code>applyLocalMove(issue, toSprintId)</code> — chuyển issue giữa <code>backlogList</code> ↔ <code>sprintIssuesAll</code> + cập nhật <code>issue.sprint</code> + <code>backlogTotal</code> ngay trong state.</li>
+  <li><code>moveIssueToSprint</code>: cập nhật cục bộ ngay (optimistic) → <code>await updateIssue</code> chạy nền → <strong>KHÔNG</strong> gọi <code>refreshIssueLists</code> khi thành công. Người dùng kéo liên tục, không khựng.</li>
+  <li>Lỗi lưu: <code>applyLocalMove</code> hoàn tác + toast + <code>refreshIssueLists()</code> đồng bộ lại.</li>
+  <li>Luồng nhập deadline (kéo vào sprint khi chưa có due_date) giữ nguyên — modal đóng tự resync.</li>
+</ul>
+<p><em>Tradeoff:</em> issue vừa thả nhảy về cuối danh sách sprint (sắp theo state, chưa giữ vị trí thả) vì chưa lưu <code>position</code>; chấp nhận được, đổi lại kéo mượt. Sprint points/completion_rate chỉ cập nhật ở lần load sau.</p>
+
+<h2 id="backlog-bulk">35. Backlog: chọn nhiều + chuyển hàng loạt, hiện đủ tiêu đề <span class="badge new">MỚI</span></h2>
+<ul>
+  <li><strong>Hiện đủ tiêu đề:</strong> <span class="file">components/BacklogIssueRow.vue</span> — bỏ <code>truncate</code> ở tiêu đề → <code>break-words leading-snug</code> (xuống dòng, không cắt).</li>
+  <li><strong>Chọn nhiều:</strong> mỗi dòng có checkbox (prop <code>selectable</code>/<code>selected</code>, emit <code>toggle-select</code>); header có checkbox chọn/bỏ tất cả (<code>indeterminate</code> khi chọn 1 phần). Chỉ hiện cho người có quyền (<code>canManage</code>).</li>
+  <li><strong>Chuyển hàng loạt:</strong> khi đã chọn → thanh thao tác: chọn sprint đích + nút “Chuyển sang sprint”. Optimistic (<code>applyLocalMove</code> mỗi issue) + 1 call API, không reload; lỗi → hoàn tác + resync. Task chưa có deadline vẫn chuyển, toast nhắc bổ sung.</li>
+</ul>
+<h3>35.1 API</h3>
+<pre><code>POST /api/issues/bulk-move/   body: { issue_ids:[...], sprint:&lt;id|null&gt; }
+# → { moved, ids:[...], sprint, without_due_date }  (ghi IssueHistory field=sprint)</code></pre>
+<h3>35.2 Files</h3>
+<ul>
+  <li><span class="file">apps/issues/views.py</span> — action <code>bulk_move</code> (scope theo membership, bulk_create history).</li>
+  <li><span class="file">components/BacklogIssueRow.vue</span> — checkbox + tiêu đề wrap.</li>
+  <li><span class="file">pages/backlog/[id].vue</span> — selectedIds, select-all, thanh bulk, <code>bulkMove()</code>.</li>
+  <li><span class="file">apps/issues/tests_bulk_move.py</span> — 4 test PASS.</li>
+</ul>
+
+<h2 id="perf-load">36. Tối ưu tốc độ load dự án — diệt N+1 query <span class="badge new">MỚI</span></h2>
+<p>Load chậm do nhiều <strong>N+1 query</strong> trên đường mở dự án. Các sửa đổi <strong>giữ nguyên output</strong> (có test đếm query chứng minh không tăng theo dữ liệu):</p>
+<ul>
+  <li><strong>Danh sách project</strong> (homepage/dashboard, <code>?page_size=200</code>): trước tốn ~3 query/project (member_count + issue_count + current_user_role) → ~600 query. Nay annotate <code>_member_count</code>/<code>_issue_count</code> bằng subquery + <code>current_user_role</code> đọc prefetch cache → <strong>hằng số</strong>, không theo số project.</li>
+  <li><strong>/stats/</strong>: ~15 count query → <strong>1 aggregate</strong> (Count+filter); <code>compute_project_progress</code> gộp đếm con mọi epic vào 1 query thay vì ~6/epic.</li>
+  <li><strong>Board / list issue</strong>: <code>total_time</code> quét bug con mỗi issue (N+1) → <code>prefetch_related('subtasks')</code> + lọc Python; thêm <code>select_related('parent__project')</code> cho <code>parent.issue_key</code>. Query board <strong>không tăng theo số issue</strong>.</li>
+  <li><strong>FE</strong>: <code>fetchProject</code> trước bị gọi 2 lần (middleware + page) → thêm cache TTL 30s + dedup in-flight; thao tác thêm member dùng <code>{force:true}</code>.</li>
+</ul>
+<h3>36.1 Files</h3>
+<ul>
+  <li><span class="file">apps/projects/views.py</span> — get_queryset annotate subquery; stats 1 aggregate.</li>
+  <li><span class="file">apps/projects/serializers.py</span> — dùng annotation + prefetch cache.</li>
+  <li><span class="file">apps/issues/epic_utils.py</span> — compute_project_progress batch.</li>
+  <li><span class="file">apps/issues/querysets.py</span> + <span class="file">models.py</span> — prefetch subtasks, parent__project; bug_fixing lọc Python.</li>
+  <li><span class="file">stores/projects.ts</span> — cache fetchProject; <span class="file">pages/projects/[id]/index.vue</span> — force sau khi thêm member.</li>
+  <li><span class="file">apps/issues/tests_perf.py</span> — đếm query (không N+1) + output không đổi: PASS.</li>
+</ul>
+
+<h2 id="home-lightbox">37. Trang chủ admin nhanh + popup xem ảnh <span class="badge new">MỚI</span></h2>
+<h3>37.1 Trang chủ admin nhanh</h3>
+<p><code>AdminDashboard</code> trước fetch <strong>500 issue + 500 user + 200 project</strong> rồi tính client-side (chậm). Nay gọi 1 endpoint tính sẵn server: <code>GET /api/projects/admin-overview/</code> (admin) → trả <code>totals</code>, <code>overdueProjects</code>, <code>laggingMembers</code>, <code>topPerformers</code> bằng aggregate. Danh sách issue chỉ <strong>lazy-load khi mở drawer</strong> (lọc theo project/assignee).</p>
+<ul>
+  <li><span class="file">apps/projects/views.py</span> — action <code>admin_overview</code> (aggregate, không nạp toàn bộ issue).</li>
+  <li><span class="file">components/AdminDashboard.vue</span> — dùng endpoint + lazy drawer; <span class="file">apps/projects/tests_admin_overview.py</span> PASS.</li>
+</ul>
+
+<h3>37.2 Popup xem ảnh (lightbox)</h3>
+<p>Trước ảnh trong issue không xem được (chỉ mở tab mới). Nay bấm ảnh → mở <strong>popup to</strong> (Esc/nền để đóng, nút tải xuống).</p>
+<ul>
+  <li><span class="file">composables/useLightbox.ts</span> — singleton <code>openLightbox(url,{alt,download})</code>.</li>
+  <li><span class="file">components/ImageLightbox.vue</span> — overlay (Teleport body), mount 1 lần trong <span class="file">layouts/default.vue</span>.</li>
+  <li><span class="file">components/IssueAttachments.vue</span> — bấm ảnh/preview mở popup; file khác vẫn tải/mở như cũ.</li>
+  <li><span class="file">components/IssueModal.vue</span> — bấm ảnh trong mô tả (rich text) mở popup (không vào chế độ sửa).</li>
+</ul>
+
+<h2 id="comment-image">38. Đính kèm ảnh trong bình luận <span class="badge new">MỚI</span></h2>
+<p>Bình luận giờ gửi kèm ảnh: nút <strong>Ảnh</strong> hoặc <strong>dán (paste)</strong> trực tiếp vào ô nhập → preview → gửi. Ảnh hiện dưới comment, bấm mở popup to (dùng lightbox B.37). Cho phép comment chỉ có ảnh.</p>
+<ul>
+  <li>BE: <span class="file">apps/comments/models.py</span> thêm <code>image</code> (ImageField) + <code>image_url</code>; <span class="file">serializers.py</span> nhận <code>image</code>, content optional, validate cần text hoặc ảnh; <span class="file">views.py</span> thêm <code>MultiPartParser</code>. Migration <code>comments/0002</code>.</li>
+  <li>FE: <span class="file">components/IssueComments.vue</span> — nút đính kèm + <code>@paste</code> ảnh + preview; gửi multipart khi có ảnh (useApi tự xử lý FormData); hiển thị ảnh comment/reply + click mở lightbox.</li>
+  <li>API: <code>POST /api/comments/</code> multipart <code>{issue, content?, image}</code> → trả thêm <code>image_url</code>.</li>
+</ul>
+
+<h2 id="epic-story-task">39. Phân cấp Epic → Story → Task <span class="badge new">MỚI</span></h2>
+<p><strong>Nới rule:</strong> Task được gắn cha là <strong>Epic HOẶC Story</strong> (Story vẫn chỉ dưới Epic; Subtask/Bug dưới Story/Task) — <code>validate_issue_parent</code>. Additive, không hỏng dữ liệu cũ.</p>
+<h3>39.1 Màn tạo issue — chọn cha thích ứng</h3>
+<ul>
+  <li><span class="file">components/CreateIssueModal.vue</span>: dropdown cha đổi theo loại — Story→Epic; Task→Epic/Story; Bug→Story/Task (optgroup). Tải epic/story/task của project 1 lần.</li>
+</ul>
+<h3>39.2 Màn Epic — tạo & xem theo cấp</h3>
+<ul>
+  <li><span class="file">components/ProjectEpicsPanel.vue</span>: nút <strong>Tạo Story/Task</strong> ngay tại epic; mỗi Story hiện <strong>“N task”</strong>, bấm mở rộng mới gọi <code>GET /api/issues/?parent=&lt;storyId&gt;</code> (lazy-load) để hiện task; nút <strong>Tạo Task trong story</strong>.</li>
+  <li><span class="file">pages/projects/[id]/index.vue</span>: handler <code>create-child</code> mở CreateIssueModal với <code>prefill {issue_type, parent}</code>.</li>
+  <li>BE: <code>serialize_epic_bundle</code> trả thêm <code>child_count</code> mỗi child (số task con của story) + dùng <code>annotate_issue_list_queryset</code> (vá N+1).</li>
+</ul>
+
+<h2 id="fix-panel-epic">40. Fix: side panel tự đóng khi sửa + Epic load chậm <span class="badge new">MỚI</span></h2>
+<h3>40.1 Side panel không tự đóng khi sửa issue</h3>
+<p><strong>Bug:</strong> sửa 1 field trong IssueModal → <code>saveField</code> emit <code>updated</code> → trang cha set <code>selectedIssueId = null</code> → panel đóng. <strong>Fix:</strong> bỏ đóng panel trong handler <code>updated</code> (chỉ refresh danh sách nền); panel chỉ đóng khi bấm thoát/Esc/nền (<code>@close</code>). Sửa ở: <span class="file">pages/projects/[id]/index.vue</span>, <span class="file">my-issues.vue</span>, <span class="file">gantt/[id].vue</span>, <span class="file">deadline.vue</span>.</p>
+<h3>40.2 Màn Epic load chậm (N+1)</h3>
+<p><strong>Bug:</strong> endpoint <code>/api/projects/{id}/epics/</code> chạy <code>compute_epic_progress</code> 2 lần/epic + query con từng epic + thiếu select_related ai_estimate/labels → ~14 query/epic. <strong>Fix (<span class="file">apps/projects/views.py</span> epics):</strong> gộp về ~3 query — lấy mọi epic + mọi story/task con 1 lượt (qua <code>annotate_issue_list_queryset</code> + select_related ai_estimate + prefetch labels), tính progress/child_count trong Python, serializer dùng <code>skip_epic_progress</code> (không tính lại). Query <strong>không tăng theo số epic</strong> (test đã chứng minh). Output giữ nguyên.</p>
+
+<h2 id="copy-id">41. Icon copy mã issue (tiện commit) <span class="badge new">MỚI</span></h2>
+<p>Bấm icon 📋 cạnh mã issue (vd <code>DFW-42</code>) để copy nhanh vào commit message. Báo “Đã copy” + đổi icon ✓.</p>
+<ul>
+  <li><span class="file">components/CopyButton.vue</span> — tái dùng, props <code>text</code>/<code>label</code>/<code>size</code>; dùng <code>navigator.clipboard</code> (fallback execCommand), toast xác nhận.</li>
+  <li>Gắn ở: <span class="file">IssueModal</span> (header, luôn hiện), <span class="file">KanbanCard</span>, <span class="file">IssueRow</span>, <span class="file">BacklogIssueRow</span> (hiện khi hover).</li>
+</ul>
+
+<h2 id="team-bonus">42. Lương KPI theo team / tiến độ dự án <span class="badge new">MỚI</span></h2>
+<p>Lương KPI được <strong>tách 2 phần: ① Cá nhân + ② Team</strong>, cả hai cộng thẳng vào tổng lương (<code>variable_total = personal_total + team_project_bonus</code>). Phần team: chu kỳ <strong>theo tháng</strong>, quỹ <strong>cấu hình × điểm hiệu suất team</strong>, chia <strong>100% theo đóng góp (SP × level)</strong>. FE hiển thị rõ 2 dòng ở bảng lương + chi tiết.</p>
+<pre><code>team_score = 0.5·completion + 0.3·on_time + 0.2·quality   (cấu hình, cap 1.2)
+  completion = issue đến hạn trong tháng đã done / tổng issue đến hạn trong tháng
+  on_time    = issue done trong tháng đúng hạn / issue done có deadline
+  quality    = hệ số theo bug_rate team (bug tạo / SP done)
+  cổng chặn: completion &lt; 50% → score 0
+pool_dự_án   = quỹ_cấu_hình(dự án) × team_score
+member_bonus = pool × (SP_done × level_weight) / Σ đóng góp</code></pre>
+<ul>
+  <li>BE: <span class="file">apps/payroll/team_bonus.py</span> (tính điểm + phân bổ), tích hợp <span class="file">services.py build_or_refresh_period</span>; field <code>PayrollEntry.team_project_bonus</code> (cộng vào <code>variable_total</code>); cấu hình <code>team_bonus</code> trong <span class="file">defaults.py</span> rates (quỹ, trọng số, band, level_weight, gate, fund_overrides theo dự án). Migration <code>payroll/0002</code>.</li>
+  <li>FE: <span class="file">components/PayrollEntryDetail.vue</span> hiển thị dòng "Thưởng team dự án" + breakdown theo dự án; tổng = KPI cá nhân + team.</li>
+  <li>API: <code>GET/PATCH /api/payroll/entries/</code> trả thêm <code>team_project_bonus</code>; breakdown ở <code>calculation.team_bonus</code>.</li>
+</ul>
+<p><em>Lưu ý:</em> theo lựa chọn "100% theo đóng góp", thành viên không gánh SP (vd tester/BA không nhận issue có SP) sẽ không chia phần thưởng team này — KPI của họ vẫn tính theo cơ chế cá nhân. Không có dữ liệu doanh thu nên quỹ là cấu hình (mặc định 10tr/dự án/tháng, override theo dự án qua <code>fund_overrides</code>).</p>
+
+<h2 id="daily-report">43. Báo cáo công việc hàng ngày <span class="badge new">MỚI</span></h2>
+<p>Trang <strong>Báo cáo ngày</strong> (sidebar) — mỗi nhân sự nộp báo cáo theo 3 phần:</p>
+<ul>
+  <li><strong>① Hôm nay làm được gì</strong>: task đã làm &amp; done (gợi ý tự động các task done trong ngày → bấm thêm; bỏ được).</li>
+  <li><strong>② Kế hoạch ngày mai</strong>: <strong>kéo task</strong> từ "Task của tôi" sang "Kế hoạch ngày mai" (vue-draggable-plus).</li>
+  <li><strong>③ Khó khăn trong ngày</strong>: ô ghi vướng mắc khiến không hoàn thành.</li>
+</ul>
+<h3>43.1 API</h3>
+<pre><code>GET   /api/daily-reports/mine/?date=YYYY-MM-DD
+      → { report, suggested_done[], plan_candidates[] }  (tự get_or_create báo cáo của tôi)
+GET   /api/daily-reports/?date=&amp;user=   # list (admin/manager xem cả team, người thường xem của mình)
+PATCH /api/daily-reports/{id}/           # { done_item_ids[], plan_item_ids[], blockers }</code></pre>
+<h3>43.2 Files</h3>
+<ul>
+  <li>BE app mới <span class="file">apps/daily_reports/</span> — model <code>DailyReport</code> (user, date, done_items M2M, plan_items M2M, blockers; unique user+date), serializer (IssueMini), viewset + action <code>mine</code>. Migration <code>0001</code>. Đăng ký INSTALLED_APPS + url <code>/api/daily-reports/</code>.</li>
+  <li>FE <span class="file">pages/daily-report.vue</span> + nav "Báo cáo ngày". Test <span class="file">apps/daily_reports/tests_daily_report.py</span> PASS.</li>
+</ul>
+<h3>43.3 Auto popup 17:30 + thiếu báo cáo + tổng hợp tháng</h3>
+<ul>
+  <li><strong>Nhắc treo liên tục 17h→24h</strong>: <span class="file">components/DailyReportReminder.vue</span> (mount trong layout) — sau <strong>17:00</strong> (T2–T6), nếu hôm nay chưa nộp → popup góc dưới-phải; bấm <strong>Thu nhỏ</strong> → còn <strong>icon đỏ treo mép phải</strong> (pulse) cảnh báo liên tục, bấm icon mở lại. Chỉ ẩn hẳn khi đã nộp (cờ <code>sessionStorage</code> theo ngày). Trang Báo cáo ngày khi lưu cũng set cờ để tắt icon.</li>
+  <li><strong>Đã nộp / thiếu</strong>: thêm <code>DailyReport.submitted_at</code> — lưu báo cáo = nộp; chưa nộp sau giờ chốt → tính "thiếu báo cáo".</li>
+  <li><strong>Tổng hợp tháng</strong>: <code>GET /api/daily-reports/monthly-summary/</code> → từng ngày {submitted/missing/weekend/future/pending} + <code>missing_dates</code>. Bỏ T7/CN; ngày làm việc ĐÃ QUA chưa nộp = thiếu (hôm nay = pending). Bảng đỏ ngày thiếu trên trang Báo cáo ngày.</li>
+  <li><strong>Kế hoạch ngày mai</strong>: <code>plan_candidates</code> = task <strong>được giao cho user đang login</strong> (assignee=me, trạng thái mở) — cả trang lẫn popup.</li>
+  <li><strong>Bảng khó khăn theo ngày</strong>: trang phân tích có tab <strong>"Khó khăn theo ngày"</strong> — bảng Ngày · Nhân sự · Khó khăn (chỉ báo cáo có ghi khó khăn), lọc theo tháng/ngày. API <code>GET /api/daily-reports/blockers/</code>.</li>
+  <li><strong>Tìm theo ngày + lọc đối tác</strong>: trang phân tích có ô <strong>tìm theo ngày</strong> → cột "Ngày DD/MM" hiện trạng thái nộp của từng người (đã nộp/thiếu/chưa nộp/nghỉ). <strong>Loại bỏ</strong> thành viên email <code>@esip.vn</code>, <code>@nhatminhglobal.com</code> (cấu hình <code>DAILY_REPORT_EXCLUDED_EMAIL_DOMAINS</code>).</li>
+  <li><strong>HCNS/HR theo dõi báo cáo</strong>: ngoài email analyst, nhân sự thuộc <strong>phòng ban HCNS/HR</strong> (department_ref/vị trí có code trong <code>DAILY_REPORT_HR_DEPARTMENT_CODES</code> = HCNS,HR) cũng xem được phân tích + chi tiết báo cáo để xử phạt theo quy chế. FE gating chuyển sang cờ BE <code>analytics-access/</code> (composable <code>useReportAnalyticsAccess</code>) nên HR hiện menu dù email không nằm trong allowlist. Gán HR vào phòng HCNS (module Tổ chức) là đủ.</li>
+  <li><strong>Phân tích báo cáo toàn team (analyst/HR)</strong>: <code>GET /api/daily-reports/team-analytics/?year=&amp;month=</code> (403 nếu không phải email cấu hình <code>DAILY_REPORT_ANALYST_EMAILS</code>) → mỗi nhân sự: đã nộp / tỉ lệ / thiếu / ngày thiếu. FE <span class="file">pages/daily-report-analytics.vue</span> + nav "Phân tích báo cáo" (chỉ hiện với email được cấp). <code>analytics-access/</code> trả cờ quyền.</li>
+  <li><strong>Báo cáo cho TESTER (QA-aware)</strong>: <code>mine/</code> gợi ý "hôm nay làm được gì" theo <strong>issue đã test</strong> (TestSession trong ngày) + <strong>bug đã báo</strong>; kế hoạch gồm <strong>issue cần test</strong> (in_review, tester=me/chưa gán). Trả thêm <code>qa_summary</code> {tested_today, bugs_reported_today, to_test} → trang Báo cáo ngày hiện banner "🧪 Công việc QA hôm nay".</li>
+  <li><strong>Xem chi tiết từng ngày của từng nhân viên</strong> (analyst): trang phân tích có nút "Chi tiết" mỗi nhân sự → drawer <span class="file">components/DailyReportDetailDrawer.vue</span> liệt kê từng ngày làm việc + nội dung báo cáo (đã làm / kế hoạch / khó khăn) hoặc "Thiếu báo cáo". BE: <code>GET /api/daily-reports/?user=&amp;year=&amp;month=</code> mở cho analyst.</li>
+  <li><strong>Thứ 7 cách tuần</strong>: công ty làm T7 xen kẽ — BE <code>workdays.is_working_day()</code> (mốc <code>WORKING_SATURDAY_ANCHOR</code>, mặc định 2026-06-20); T7 nghỉ/CN không tính thiếu, T7 làm tính như ngày thường. Reminder + summary đồng bộ qua nuxt <code>workingSaturdayAnchor</code>.</li>
+</ul>
+
+<h2 id="qa-bug-editor">44. Form báo bug QA: rich editor + ảnh + estimate/priority <span class="badge new">MỚI</span></h2>
+<ul>
+  <li><span class="file">components/BugReportForm.vue</span>: phần chi tiết lỗi đổi sang <strong>RichTextEditor</strong> — <strong>kéo thả / dán ảnh inline</strong> (base64, resize). Thêm ô <strong>Estimate (phút)</strong> + giữ <strong>Priority</strong> cho dev.</li>
+  <li>BE <code>tester_report_bugs</code> (<span class="file">apps/issues/qa_workflow.py</span>): nhận <code>description</code> (rich HTML, ưu tiên) — trống thì build từ steps/expected/actual như cũ; nhận <code>estimated_minutes</code> set vào bug giao lại dev.</li>
+  <li>Bug hiển thị cho dev qua <code>issue-rich-description</code> (ảnh inline + bấm xem lightbox); estimate/priority trong issue detail.</li>
+</ul>
+
+<h2 id="escalate-task">45. Báo đỏ (escalate) task thủ công <span class="badge new">MỚI</span></h2>
+<p>PM/Owner/Admin gắn <strong>cờ đỏ</strong> cho task (đã làm nhưng vẫn lỗi, hoặc nhân sự quên) → thông báo nhân sự xử lý gấp.</p>
+<ul>
+  <li>BE: Issue thêm <code>is_escalated / escalated_at / escalated_by / escalation_note</code> (mig issues 0008); action <code>escalate</code> (body <code>note</code>) + <code>unescalate</code> — chỉ PM/Owner/Admin (kiểm tra ProjectMember). Notify <code>issue_escalated</code> (mig notifications 0003). Detail trả <code>can_escalate</code>.</li>
+  <li>FE: <span class="file">KanbanCard.vue</span> badge "🚩 Báo đỏ" (pulse) khi escalate; <span class="file">IssueModal.vue</span> nút "🚩 Báo đỏ" / "Gỡ báo đỏ" (theo <code>can_escalate</code>) + banner đỏ kèm lý do.</li>
+  <li>API: <code>POST /api/issues/{id}/escalate/</code> · <code>POST /api/issues/{id}/unescalate/</code></li>
+</ul>
+
+<h2 id="report-tracking">46. Theo dõi báo cáo nhân sự (HR dashboard) <span class="badge new">MỚI</span></h2>
+<p>Trang <span class="file">pages/report-tracking.vue</span> (nav "Theo dõi báo cáo") cho HR/analyst theo dõi tình trạng nộp báo cáo ngày của toàn công ty, đúng theo thiết kế.</p>
+<ul>
+  <li><strong>4 thẻ KPI</strong>: Tổng nhân sự · Đã nộp hôm nay (xanh) · Chưa nộp hôm nay (vàng) · Quá hạn &gt;3 ngày (đỏ) — kèm %.</li>
+  <li><strong>Tab lọc</strong>: Tất cả / Chưa nộp hôm nay / Quá hạn / Đã hoàn thành (kèm số đếm) + ô tìm kiếm nhân sự + dropdown phòng ban.</li>
+  <li><strong>Bảng</strong>: STT · Nhân sự (avatar chữ + tên + email) · Phòng ban · Trạng thái hôm nay (badge) · Thiếu (số ngày) · Thiếu gần nhất · Hành động (Nhắc nhở / Xem chi tiết).</li>
+  <li><strong>Phân trang</strong> 20/50/100, <strong>Nhắc nhở tất cả người chưa nộp</strong>, <strong>Xuất Excel</strong> (tải CSV UTF-8 có auth token).</li>
+  <li>Trạng thái: <code>submitted</code> (nộp hôm nay) · <code>overdue</code> (&gt;3 ngày thiếu) · <code>not_submitted</code> (≤3). Tính thiếu từ ngày vào làm, chỉ ngày làm việc, loại domain ngoài.</li>
+  <li>Tái dùng <span class="file">DailyReportDetailDrawer.vue</span> cho "Xem chi tiết". "Gửi email báo cáo" tạm wire tới Xuất Excel (chưa cấu hình SMTP).</li>
+  <li>API: <code>GET /api/daily-reports/tracking/</code> · <code>POST /api/daily-reports/remind/</code> · <code>GET /api/daily-reports/export/</code>.</li>
+</ul>
+
+<h2 id="tradeoffs">11. Tradeoffs &amp; tương lai</h2>
+<ul>
+  <li><strong>Sequential upload</strong>: an toàn cho rate limit, dễ hiển thị tiến trình từng ảnh. Có thể đổi sang <code>Promise.all</code> + concurrency=3 nếu user thường upload nhiều ảnh.</li>
+  <li><strong>Progress giả lập</strong>: dùng <code>setInterval</code> tick 10%. Để chính xác hơn cần đổi <code>fetch</code> → <code>XMLHttpRequest</code> với <code>upload.onprogress</code> hoặc Streams API.</li>
+  <li><strong>Paste ảnh từ clipboard</strong>: chưa hỗ trợ trong panel (chỉ drag-drop + click). Có thể thêm <code>@paste</code> handler ở element root của panel.</li>
+  <li><strong>Embed ảnh trong mô tả</strong>: hiện ảnh là attachment riêng. Có thể tích hợp Tiptap <code>Image</code> extension để chèn inline trong description (cần thêm endpoint upload-and-return-URL).</li>
+  <li><strong>Rollback khi upload ảnh fail</strong>: hiện nếu fail, issue vẫn tồn tại. Có thể thêm option "Xóa issue đã tạo" hoặc retry button cho từng ảnh.</li>
+  <li><strong>Phím tắt mở rộng</strong>: hiện chỉ E/M/Esc/Ctrl+Enter. Có thể thêm S (status), P (priority), A (assignee), C (focus comment), ? (help modal) trong tương lai.</li>
+  <li><strong>Mobile</strong>: sidebar 1100px sẽ tràn trên mobile. Đã dùng <code>w-full max-w-[1100px]</code> nên adapt được, nhưng UX hai cột scroll trên mobile chưa tối ưu — cần test thực tế.</li>
+  <li><strong>Gantt — issue thiếu start_date</strong>: hiện infer từ <code>created_at</code> / <code>sprint.start_date</code> / <code>estimated_minutes</code>. Để chính xác hơn, BE nên bổ sung field <code>start_date</code> cho issue (tương tự <code>due_date</code>).</li>
+  <li><strong>Gantt — Excel format</strong>: dùng HTML-table → <code>.xls</code>. Đơn giản nhưng không có công thức / chart / merge sheets. Nếu cần xuất chuẩn xlsx (mở được Google Sheets, LibreOffice), nên thêm dep <code>exceljs</code> hoặc <code>xlsx</code> (SheetJS).</li>
+  <li><strong>Gantt — drag-resize bar</strong>: hiện bars là display-only. Có thể thêm drag để chỉnh start/end và PATCH lên BE — cần BE hỗ trợ <code>start_date</code> trước.</li>
+  <li><strong>Gantt — dependencies (FS/SS/FF/SF)</strong>: chưa có. Có thể vẽ arrow giữa các bar nếu BE lưu quan hệ parent/blocker.</li>
+  <li><strong>Gantt — critical path</strong>: chưa tính. Cần graph dependencies trước.</li>
+  <li><strong>Gantt — performance</strong>: render mọi bar trong DOM. Với project &gt;500 issues + view tháng, có thể lag scroll. Nếu cần, áp dụng virtual scrolling (chỉ render rows trong viewport).</li>
+  <li><strong>Google scope <code>drive</code> (full)</strong>: scope nhạy cảm, có thể cần Google verification cho production. Thay thế dài hạn: Picker + <code>drive.file</code> nếu muốn hạn chế quyền.</li>
+  <li><strong>Drive activity queryset</strong>: đã lọc theo membership; admin thấy mọi activity qua <code>filter_by_project_membership</code> bypass.</li>
+  <li><strong>Company OAuth secrets</strong>: lưu plaintext trong DB — cân nhắc encrypt at rest cho production.</li>
+</ul>
+
+<div class="ok">
+  <strong>Pre-existing TypeScript diagnostics:</strong> Project chưa cấu hình đầy đủ Vue/Nuxt types trong <code>tsconfig.json</code> nên các diagnostics về <code>defineProps</code>, <code>@heroicons/vue/24/outline</code> xuất hiện ở mọi file <code>.vue</code>. Không phải lỗi do thay đổi này gây ra.
+</div>
+
+</body>
+</html>
