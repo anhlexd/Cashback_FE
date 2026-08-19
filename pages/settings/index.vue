@@ -37,29 +37,14 @@ import {
   BellIcon,
   ShieldCheckIcon,
   PaintBrushIcon,
-  BuildingOffice2Icon,
-  CpuChipIcon,
-  IdentificationIcon,
 } from '@heroicons/vue/24/outline'
 
 definePageMeta({ middleware: 'auth' })
 
-const authStore = useAuthStore()
-
-const navItems = computed(() => {
-  const items = [
-    { to: '/settings/profile', label: 'Hồ sơ', icon: UserCircleIcon },
-    { to: '/settings/notifications', label: 'Thông báo', icon: BellIcon },
-    { to: '/settings/security', label: 'Bảo mật', icon: ShieldCheckIcon },
-    { to: '/settings/appearance', label: 'Giao diện', icon: PaintBrushIcon },
-  ]
-  if (authStore.user?.role === 'admin') {
-    items.push(
-      { to: '/settings/org', label: 'Phòng ban & Vị trí', icon: IdentificationIcon },
-      { to: '/settings/company', label: 'Công ty', icon: BuildingOffice2Icon },
-      { to: '/settings/cursor', label: 'Cursor', icon: CpuChipIcon },
-    )
-  }
-  return items
-})
+const navItems = computed(() => [
+  { to: '/settings/profile', label: 'Hồ sơ', icon: UserCircleIcon },
+  { to: '/settings/notifications', label: 'Thông báo', icon: BellIcon },
+  { to: '/settings/security', label: 'Bảo mật', icon: ShieldCheckIcon },
+  { to: '/settings/appearance', label: 'Giao diện', icon: PaintBrushIcon },
+])
 </script>

@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --brand-primary: #c41230;
-  --brand-primary-hover: #9e0f26;
+  --brand-primary: #ee4d2d;
+  --brand-primary-hover: #d43211;
 }
 
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
-  html { font-family: 'DM Sans', system-ui, sans-serif; }
+  html { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
   body {
     @apply bg-surface-50 text-gray-900 dark:bg-dark-300 dark:text-gray-100;
     -webkit-font-smoothing: antialiased;
@@ -121,7 +121,7 @@
 
   /* Markdown / Cursor / AI brief — font thống nhất, tiếng Việt */
   .markdown-body {
-    font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 0.9375rem;
     line-height: 1.7;
     letter-spacing: 0.01em;
@@ -231,7 +231,7 @@
 
   .implementor-note-viewer,
   .implementor-note-viewer--page {
-    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   .implementor-note-viewer :deep(h1),
@@ -245,7 +245,7 @@
     font-family: inherit;
   }
   .implementor-note-viewer :deep(.cursor-logic-block) {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     line-height: 1.7;
   }
   .implementor-note-viewer :deep(.cursor-logic-block code) {

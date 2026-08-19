@@ -9,7 +9,7 @@
 
       <!-- Heading -->
       <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
-        Chào mừng bạn đến với <span class="text-brand-600">Monimoni</span>
+        Chào mừng bạn đến với <span class="text-brand-600">MeMoon</span>
       </h1>
       <p class="text-gray-500 dark:text-gray-400 mb-8">
         Kết nối mua sắm trực tuyến, tích lũy thông minh
@@ -25,7 +25,7 @@
           </h2>
           <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300 mb-4">
             Trong kỷ nguyên bùng nổ của thương mại điện tử, việc tối ưu hóa chi tiêu đã trở thành một nhu cầu
-            thiết yếu đối với người tiêu dùng thông minh. Sứ mệnh của <strong class="text-gray-900 dark:text-white">Monimoni</strong>
+            thiết yếu đối với người tiêu dùng thông minh. Sứ mệnh của <strong class="text-gray-900 dark:text-white">MeMoon</strong>
             là mang lại một giải pháp mua sắm kinh tế nhất:
             <strong class="text-gray-900 dark:text-white">"Giúp mọi người mua online bất cứ thứ gì cũng rẻ hơn"</strong>.
           </p>
@@ -40,7 +40,7 @@
         <section>
           <h2 class="flex items-center gap-2.5 text-lg font-bold text-gray-900 dark:text-white mb-4">
             <span class="w-1 h-5 rounded-full bg-brand-600"></span>
-            Mô hình hoạt động của Monimoni
+            Mô hình hoạt động của MeMoon
           </h2>
           <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">
             Chúng tôi hoạt động dựa trên mô hình tiếp thị liên kết (Affiliate Marketing) minh bạch và đôi bên
@@ -106,11 +106,11 @@
             Mục tiêu của chúng tôi
           </h2>
           <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-            Monimoni đang hướng tới việc
+            MeMoon đang hướng tới việc
             <strong class="text-gray-900 dark:text-white">tích hợp sâu rộng hầu hết các sàn thương mại điện tử hàng đầu tại Việt Nam</strong>
             (bao gồm Shopee, Lazada, Tiki, TikTok Shop...) cùng hàng loạt thương hiệu dịch vụ ăn uống, đặt vé máy
             bay, du lịch khác. Mục tiêu của chúng tôi là phủ sóng 100% nhu cầu trực tuyến của bạn, cứ hễ bạn phát
-            sinh giao dịch online là có Monimoni đồng hành hoàn tiền.
+            sinh giao dịch online là có MeMoon đồng hành hoàn tiền.
           </p>
         </section>
 
@@ -130,7 +130,7 @@
                 <MapPinIcon class="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <div>
                   <div class="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Đơn vị chủ quản</div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">Nhóm phát triển Monimoni</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Nhóm phát triển MeMoon</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">Địa chỉ: A14B2 Yên Hòa, Cầu Giấy, Hà Nội</div>
                 </div>
               </div>
@@ -140,8 +140,8 @@
                   <div class="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Kênh hỗ trợ trực tuyến</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">
                     Mọi yêu cầu kỹ thuật xin gửi về hòm thư:
-                    <a href="mailto:support@monimoni.vn" class="text-brand-600 hover:text-brand-700 font-medium underline">
-                      support@monimoni.vn
+                    <a href="mailto:support@MeMoon.vn" class="text-brand-600 hover:text-brand-700 font-medium underline">
+                      support@MeMoon.vn
                     </a>
                   </div>
                 </div>
@@ -153,7 +153,7 @@
 
       <!-- Footer -->
       <p class="text-center text-xs text-gray-400 mt-8">
-        © {{ new Date().getFullYear() }} monimoni.vn · Mua sắm thả ga, hoàn tiền cực đã
+        © {{ new Date().getFullYear() }} MeMoon.vn · Mua sắm thả ga, hoàn tiền cực đã
       </p>
     </div>
   </div>
@@ -175,13 +175,13 @@ const steps = [
   {
     number: 1,
     title: 'Mua sắm liên kết',
-    description: 'Bạn truy cập các sàn TMĐT (Shopee, Lazada, Tiki...) thông qua các liên kết mua sắm được cấu hình trên Monimoni.',
+    description: 'Bạn truy cập các sàn TMĐT (Shopee, Lazada, Tiki...) thông qua các liên kết mua sắm được cấu hình trên MeMoon.',
     highlight: false,
   },
   {
     number: 2,
     title: 'Nhận hoa hồng',
-    description: 'Khi đơn hàng hoàn thành thành công, các đối tác thương mại điện tử sẽ chi trả một khoản hoa hồng tiếp thị cho Monimoni.',
+    description: 'Khi đơn hàng hoàn thành thành công, các đối tác thương mại điện tử sẽ chi trả một khoản hoa hồng tiếp thị cho MeMoon.',
     highlight: false,
   },
   {
@@ -191,7 +191,7 @@ const steps = [
     boldParts: [
       { text: 'Chúng tôi không giữ lại toàn bộ mà ', bold: false },
       { text: 'chia sẻ lại phần lớn số tiền hoa hồng này', bold: true },
-      { text: ' cho bạn dưới dạng tiền tích lũy trực tiếp vào ví Monimoni.', bold: false },
+      { text: ' cho bạn dưới dạng tiền tích lũy trực tiếp vào ví MeMoon.', bold: false },
     ],
   },
 ]
@@ -199,7 +199,7 @@ const steps = [
 const coreValues = [
   {
     title: 'Lợi ích tối đa',
-    description: 'Monimoni luôn nỗ lực tối ưu hệ thống, nâng cao tỉ lệ hoàn tiền để mang lại giá trị chiết khấu thực tế cao nhất cho người dùng.',
+    description: 'MeMoon luôn nỗ lực tối ưu hệ thống, nâng cao tỉ lệ hoàn tiền để mang lại giá trị chiết khấu thực tế cao nhất cho người dùng.',
     icon: BanknotesIcon,
   },
   {

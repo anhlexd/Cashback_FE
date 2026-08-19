@@ -4,7 +4,7 @@ export default defineNuxtPlugin(async () => {
   const authStore = useAuthStore()
   authStore.initFromStorage()
 
-  if (authStore.accessToken && !authStore.user) {
+  if (authStore.token && !authStore.user) {
     await authStore.fetchProfile().catch(() => {
       // Token may be expired — logout silently
       authStore.logout()

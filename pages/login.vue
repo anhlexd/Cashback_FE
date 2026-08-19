@@ -3,7 +3,7 @@
     <!-- Đăng nhập -->
     <template v-if="stage === 'login'">
       <h1 class="text-xl font-bold text-gray-900 mb-1">Đăng nhập</h1>
-      <p class="text-sm text-gray-500 mb-6">Chào mừng trở lại IDT</p>
+      <p class="text-sm text-gray-500 mb-6">Chào mừng trở lại MEMOON</p>
 
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
@@ -318,7 +318,7 @@ async function handleLogin() {
   error.value = ''
   try {
     await authStore.login(form.email, form.password)
-    router.push('/')
+    router.push('/dashboard')
   } catch (err: any) {
     const data = err?.data || err
     error.value = data?.message || data?.detail || 'Đăng nhập thất bại'

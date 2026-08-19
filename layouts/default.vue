@@ -20,81 +20,49 @@
     >
       <!-- Logo -->
       <div
-        class="flex items-center px-3 py-4 border-b border-surface-200 dark:border-dark-50"
+        class="flex items-center justify-center px-3 py-4 border-b border-surface-200 dark:border-dark-50"
       >
         <AppLogo :compact="!sidebarOpen" />
       </div>
 
       <!-- Nav -->
       <nav class="flex-1 overflow-y-auto p-2 space-y-0.5">
-        <template v-for="item in navItems" :key="item.to">
-          <NuxtLink :to="item.to" custom v-slot="{ isActive, navigate }">
-            <div
-              @click="navigate"
-              :class="isActive ? 'nav-item-active' : 'nav-item'"
-              :title="!sidebarOpen ? item.label : ''"
-            >
-              <div class="relative flex-shrink-0">
-                <component :is="item.icon" class="w-4 h-4" />
-                <span
-                  v-if="item.badge && item.badge.value > 0"
-                  class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none"
-                >
-                  {{ item.badge.value > 9 ? "9+" : item.badge.value }}
-                </span>
-              </div>
-              <span v-if="sidebarOpen" class="truncate flex-1">{{
-                item.label
-              }}</span>
-              <span
-                v-if="sidebarOpen && item.badge && item.badge.value > 0"
-                class="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0"
-                >{{ item.badge.value }}</span
-              >
-            </div>
-          </NuxtLink>
-        </template>
-
-        <!-- Projects section -->
-        <div v-if="sidebarOpen" class="pt-4">
-          <div class="flex items-center justify-between px-3 mb-1">
-            <span
-              class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
-              >Projects</span
-            >
-            <button
-              v-if="isAdmin"
-              @click="showCreateProject = true"
-              class="btn-ghost btn-icon p-0.5"
-              title="Tạo project (Admin)"
-            >
-              <PlusIcon class="w-3.5 h-3.5" />
-            </button>
+        <template v-for="(section, sIdx) in navSections" :key="section.title">
+          <div
+            v-if="sidebarOpen"
+            class="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+            :class="{ 'mt-1': sIdx > 0 }"
+          >
+            {{ section.title }}
           </div>
           <div
-            v-for="project in projectsStore.projects.slice(0, 6)"
-            :key="project.id"
-          >
-            <NuxtLink
-              :to="`/projects/${project.id}`"
-              custom
-              v-slot="{ isActive, navigate }"
-            >
+            v-else-if="sIdx > 0"
+            class="my-2 border-t border-surface-200 dark:border-dark-50"
+          ></div>
+
+          <template v-for="item in section.items" :key="item.to">
+            <NuxtLink :to="item.to" custom v-slot="{ isActive, navigate }">
               <div
                 @click="navigate"
                 :class="isActive ? 'nav-item-active' : 'nav-item'"
-                class="pl-3"
+                :title="!sidebarOpen ? item.label : ''"
               >
+                <div class="relative flex-shrink-0">
+                  <component :is="item.icon" class="w-4 h-4" />
+                </div>
+                <span v-if="sidebarOpen" class="truncate flex-1">{{
+                  item.label
+                }}</span>
                 <span
-                  class="w-4 h-4 rounded text-xs font-bold flex items-center justify-center bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300 flex-shrink-0"
+                  v-if="sidebarOpen && item.badge"
+                  class="ml-auto flex-shrink-0 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-semibold whitespace-nowrap"
                 >
-                  {{ project.key[0] }}
+                  {{ item.badge }}
                 </span>
-                <span class="truncate text-xs">{{ project.name }}</span>
               </div>
             </NuxtLink>
-          </div>
-        </div>
+          </template>
+        </template>
       </nav>
 
       <Button
@@ -120,7 +88,7 @@
               <div
                 class="text-xs font-medium text-gray-900 dark:text-white truncate"
               >
-                {{ authStore.user?.full_name }}
+                {{ authStore.user?.fullname }}
               </div>
               <div class="text-xs text-gray-400 truncate">
                 {{ authStore.user?.role }}
@@ -177,27 +145,6 @@
 
         <div class="flex-1"></div>
 
-        <!-- Search (full button on sm+, icon-only on mobile) -->
-        <button
-          @click="showSearch = true"
-          class="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 bg-surface-100 dark:bg-dark-50 rounded-lg hover:bg-surface-200 dark:hover:bg-dark-50 transition-colors w-40 md:w-48"
-        >
-          <MagnifyingGlassIcon class="w-4 h-4" />
-          <span class="hidden md:inline">Tìm kiếm...</span>
-          <span class="md:hidden">Tìm</span>
-          <kbd
-            class="ml-auto hidden md:inline-block text-xs bg-white dark:bg-dark-100 px-1.5 py-0.5 rounded border border-gray-200 dark:border-dark-50"
-            >⌘K</kbd
-          >
-        </button>
-        <button
-          @click="showSearch = true"
-          class="btn-icon btn-ghost sm:hidden"
-          aria-label="Tìm kiếm"
-        >
-          <MagnifyingGlassIcon class="w-4 h-4" />
-        </button>
-
         <!-- Dark mode -->
         <button @click="toggleDark()" class="btn-icon btn-ghost">
           <SunIcon v-if="isDark" class="w-4 h-4" />
@@ -222,12 +169,6 @@
         </div>
       </header>
 
-      <!-- Idle (no in-progress task) warning banner -->
-      <IdleTaskWarning v-if="authStore.isAuthenticated" />
-
-      <!-- Deadline warning banner (fixed top) -->
-      <DeadlineWarningBanner v-if="showDeadlineBanner" />
-
       <!-- Page content -->
       <main
         class="flex-1 min-h-0 pt-0"
@@ -238,28 +179,22 @@
     </div>
 
     <!-- Modals -->
-    <CreateProjectModal
-      v-if="isAdmin && showCreateProject"
-      @close="showCreateProject = false"
-      @created="onProjectCreated"
-    />
-    <GlobalSearch v-if="showSearch" @close="showSearch = false" />
     <ToastContainer />
     <ImageLightbox />
-    <DailyReportReminder />
   </div>
 </template>
 
 <script setup lang="ts">
 import {
   HomeIcon,
-  RectangleGroupIcon,
-  ListBulletIcon,
-  ChartBarIcon,
-  UsersIcon,
-  PlusIcon,
+  CubeIcon,
+  HandThumbUpIcon,
+  TicketIcon,
   BellIcon,
-  MagnifyingGlassIcon,
+  WalletIcon,
+  UserGroupIcon,
+  ArrowPathIcon,
+  InformationCircleIcon,
   SunIcon,
   MoonIcon,
   ChevronLeftIcon,
@@ -267,35 +202,22 @@ import {
   UserCircleIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  ClockIcon,
-  CodeBracketIcon,
-  FolderIcon,
-  SwatchIcon,
   Bars3Icon,
-  BanknotesIcon,
-  ClipboardDocumentCheckIcon,
 } from "@heroicons/vue/24/outline";
 import { useDark, useToggle, onClickOutside, useMediaQuery } from "@vueuse/core";
-import { BeakerIcon } from "@heroicons/vue/24/outline";
-import { isPayrollViewerEmail } from "~/utils/payrollViewerEmails";
+
 defineOptions({ middleware: "auth" });
 
 const authStore = useAuthStore();
-const isAdmin = computed(() => authStore.user?.role === "admin");
-const projectsStore = useProjectsStore();
-const notificationsStore = useNotificationsStore();
 const router = useRouter();
 const route = useRoute();
-const api = useApi();
 
-/** Backlog/Board tự scroll bên trong — không để main cuộn cả trang. */
-const mainScrollLocked = computed(() =>
-  /^\/backlog\/\d+/.test(route.path) || /^\/board\/\d+/.test(route.path),
-);
+/** Nếu trang nào cần tự cuộn bên trong thay vì cuộn cả layout, thêm path vào đây. */
+const mainScrollLocked = computed(() => false);
 
 const isDark = useDark();
 const toggleDark = useToggle(isDark);
-const isMobile = useMediaQuery('(max-width: 1023px)');  // < lg breakpoint
+const isMobile = useMediaQuery('(max-width: 1023px)'); // < lg breakpoint
 const sidebarOpen = ref(true);
 
 // Auto-collapse on mobile by default
@@ -308,91 +230,42 @@ const currentRoute = useRoute();
 watch(() => currentRoute.fullPath, () => {
   if (isMobile.value) sidebarOpen.value = false;
 });
+
 const userMenuOpen = ref(false);
 const notifOpen = ref(false);
-const showCreateProject = ref(false);
-const showSearch = ref(false);
 const unreadCount = computed(() => notificationsStore.unreadCount);
-const overdueCount = ref(0);
-const qaQueueCount = ref(0);
+
+const notificationsStore = useNotificationsStore();
 
 const userMenuRef = ref(null);
 const notifRef = ref(null);
 onClickOutside(userMenuRef, () => (userMenuOpen.value = false));
 onClickOutside(notifRef, () => (notifOpen.value = false));
 
-const config = useRuntimeConfig();
-const showPayrollNav = computed(() =>
-  isPayrollViewerEmail(
-    authStore.user?.email,
-    config.public.payrollViewerEmails as string | undefined,
-  ),
-);
-const reportAnalyticsAccess = useReportAnalyticsAccess();
-// Email analyst HOẶC nhân sự HCNS/HR (cờ từ BE)
-const showReportAnalytics = computed(() => reportAnalyticsAccess.canView.value);
-
-const navItems = computed(() => {
-  const items = [
-    { to: "/", label: "Dashboard", icon: HomeIcon },
-    { to: "/projects", label: "Projects", icon: RectangleGroupIcon },
-    { to: "/my-issues", label: "My Issues", icon: ListBulletIcon },
-    { to: "/daily-report", label: "Báo cáo ngày", icon: ClipboardDocumentCheckIcon },
-    { to: "/qa-queue", label: "QA Queue", icon: BeakerIcon, badge: qaQueueCount },
-    { to: "/deadline", label: "Deadline", icon: ClockIcon, badge: overdueCount },
-    { to: "/reports", label: "Reports", icon: ChartBarIcon },
-    { to: "/github", label: "GitHub", icon: CodeBracketIcon },
-  ];
-  items.push(
-    { to: "/integrations/drive", label: "Google Drive", icon: FolderIcon },
-    { to: "/integrations/figma", label: "Figma", icon: SwatchIcon },
-    { to: "/qa-reports", label: "QA Reports", icon: ChartBarIcon },
-    { to: "/members", label: "Members", icon: UsersIcon },
-  )
-  if (showPayrollNav.value) {
-    items.splice(6, 0, { to: "/payroll", label: "Lương khoán", icon: BanknotesIcon });
-  }
-  if (showReportAnalytics.value) {
-    items.push({ to: "/report-tracking", label: "Theo dõi báo cáo", icon: ClipboardDocumentCheckIcon });
-    items.push({ to: "/daily-report-analytics", label: "Phân tích báo cáo", icon: ChartBarIcon });
-  }
-  return items;
-});
-
-const showDeadlineBanner = computed(() => {
-  return ["/my-issues", "/deadline"].includes(route.path);
-});
-async function loadOverdueCount() {
-  if (!authStore.isAuthenticated) return;
-  try {
-    const [overdueData, qaData] = await Promise.all([
-      api.get("/api/deadlines/overdue_issues/", { count_only: 1 }),
-      api.get("/api/issues/qa_queue/", { count_only: 1 }),
-    ]);
-    overdueCount.value = overdueData?.count ?? overdueData?.issues?.length ?? 0;
-    qaQueueCount.value = qaData?.count ?? qaData?.issues?.length ?? 0;
-  } catch {}
-}
-
-onMounted(async () => {
-  projectsStore.fetchProjects().catch(() => {});
-  reportAnalyticsAccess.ensureLoaded();
-  loadOverdueCount();
-  notificationsStore.fetchUnreadCount();
-  notificationsStore.connectWebSocket();
-  // Refresh overdue count every 5 min
-  const t = setInterval(loadOverdueCount, 5 * 60 * 1000);
-  onUnmounted(() => {
-    clearInterval(t);
-    notificationsStore.disconnectWebSocket();
-  });
-});
-
-// Reconnect WebSocket whenever the access token rotates (refresh flow)
-watch(() => authStore.accessToken, (token: string | null) => {
-  if (token) notificationsStore.connectWebSocket(token)
-  else notificationsStore.disconnectWebSocket()
-})
+// Menu sidebar: 2 nhóm "Hệ thống" và "Giải trí & phụ", khớp thiết kế
+const navSections = computed(() => [
+  {
+    title: "Hệ thống",
+    items: [
+      // { to: "/", label: "Trang chủ", icon: HomeIcon },
+      { to: "/dashboard", label: "Trang chủ", icon: HomeIcon },
+      { to: "/purchase-history", label: "Lịch sử mua hàng", icon: CubeIcon },
+      { to: "/shopping", label: "Tích MOON, rinh Money", icon: HomeIcon },
+      { to: "/whats-new", label: "Hôm nay có gì?", icon: HandThumbUpIcon },
+    ],
+  },
+  {
+    title: "Giải trí & phụ",
+    items: [
+      { to: "/vouchers", label: "Mã Voucher", icon: TicketIcon, badge: "Đang thử nghiệm" },
+      { to: "/notifications", label: "Thông báo", icon: BellIcon },
+      { to: "/wallet", label: "Ví MOON", icon: WalletIcon },
+      { to: "/invite", label: "Mời bạn bè", icon: UserGroupIcon },
+      { to: "/lucky-spin", label: "Vòng quay may mắn", icon: ArrowPathIcon },
+      { to: "/aboutus", label: "Về chúng tôi", icon: InformationCircleIcon },
+    ],
+  },
+]);
 
 async function handleLogout() {
   notificationsStore.disconnectWebSocket();
@@ -400,18 +273,11 @@ async function handleLogout() {
   router.push("/login");
 }
 
-function onProjectCreated(project: any) {
-  showCreateProject.value = false;
-  router.push(`/projects/${project.id}`);
-}
-
-// Keyboard shortcut
 onMounted(() => {
-  document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-      e.preventDefault();
-      showSearch.value = true;
-    }
+  notificationsStore.fetchUnreadCount();
+  notificationsStore.connectWebSocket();
+  onUnmounted(() => {
+    notificationsStore.disconnectWebSocket();
   });
 });
 </script>

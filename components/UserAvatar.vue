@@ -4,9 +4,9 @@
     :class="sizeClasses"
     class="rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-medium text-white"
     :style="!user?.avatar_url ? { backgroundColor: avatarColor } : {}"
-    :title="tooltip && user ? user.full_name : undefined"
+    :title="tooltip && user ? user.fullname : undefined"
   >
-    <img v-if="user?.avatar_url" :src="user.avatar_url" :alt="user?.full_name" class="w-full h-full object-cover" />
+    <img v-if="user?.avatar_url" :src="user.avatar_url" :alt="user?.fullname" class="w-full h-full object-cover" />
     <span v-else>{{ initials }}</span>
   </div>
 </template>
@@ -26,7 +26,7 @@ const sizeClasses = computed(() => ({
 }))
 
 const initials = computed(() => {
-  const name = props.user?.full_name || props.user?.username || '?'
+  const name = props.user?.fullname || props.user?.username || '?'
   return name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
 })
 

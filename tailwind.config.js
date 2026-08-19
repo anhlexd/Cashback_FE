@@ -11,22 +11,22 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
         brand: {
-          50: '#fdf2f3',
-          100: '#fce4e7',
-          200: '#f9c9cf',
-          300: '#f4a3ad',
-          400: '#e85d6f',
-          500: '#d91f3d',
-          600: '#C41230',
-          700: '#9e0f26',
-          800: '#7a0c1e',
-          900: '#5c0a18',
-          950: '#3a060f',
+          50: '#feefec',
+          100: '#fcdbd5',
+          200: '#f8b7aa',
+          300: '#f48b76',
+          400: '#f16b50',
+          500: '#ef5334',
+          600: '#ee4d2d',
+          700: '#d43211',
+          800: '#ae290e',
+          900: '#89200b',
+          950: '#501307',
         },
         metal: {
           50: '#f5f5f5',

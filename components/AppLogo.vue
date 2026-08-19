@@ -19,7 +19,7 @@ withDefaults(
   }>(),
   {
     compact: false,
-    compactClass: 'h-9 w-9 object-cover object-top rounded-sm',
+    compactClass: 'h-10 w-10 object-cover object-top rounded-sm',
     expandedClass: 'h-10 w-auto max-w-[200px]',
     alt: 'Integrated Development Technologies',
   }

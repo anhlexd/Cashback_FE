@@ -1,14 +1,14 @@
-/** Màu brand IDT — đồng bộ với logo (#C41230) */
-export const BRAND_PRIMARY = '#C41230'
-export const BRAND_PRIMARY_DARK = '#9e0f26'
-export const BRAND_PRIMARY_LIGHT = '#fce4e7'
+/** Màu brand — cam Shopee (#EE4D2D) */
+export const BRAND_PRIMARY = '#EE4D2D'
+export const BRAND_PRIMARY_DARK = '#d43211'
+export const BRAND_PRIMARY_LIGHT = '#fcdbd5'
 
-/** Palette avatar / chart (đỏ IDT làm màu mặc định, thay #6370f1 cũ) */
+/** Palette avatar / chart (cam làm màu mặc định) */
 export const CHART_AVATAR_COLORS = [
   BRAND_PRIMARY,
-  '#9e0f26',
-  '#d91f3d',
-  '#7a0c1e',
+  '#d43211',
+  '#ef5334',
+  '#ae290e',
   '#ec4899',
   '#f97316',
   '#10b981',

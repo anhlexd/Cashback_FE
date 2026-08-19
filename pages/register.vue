@@ -3,7 +3,7 @@
     <!-- BƯỚC 1: NHẬP THÔNG TIN ĐĂNG KÝ -->
     <template v-if="step === 'form'">
       <h1 class="text-xl font-bold text-gray-900 mb-1">Tạo tài khoản</h1>
-      <p class="text-sm text-gray-500 mb-6">Bắt đầu quản lý dự án với IDT</p>
+      <p class="text-sm text-gray-500 mb-6">Bắt đầu nhận CashBack với MEMOON</p>
 
       <form @submit.prevent="handleRegister" class="space-y-4">
         <div>
