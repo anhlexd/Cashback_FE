@@ -25,8 +25,8 @@ export const useApi = () => {
       ...(fetchOptions.headers as Record<string, string>),
     }
 
-    if (authStore.accessToken) {
-      headers['Authorization'] = `Bearer ${authStore.accessToken}`
+    if (authStore.token) {
+      headers['Authorization'] = `Token ${authStore.token}`
     }
 
     // Handle FormData - remove Content-Type to let browser set boundary
@@ -34,19 +34,12 @@ export const useApi = () => {
       delete headers['Content-Type']
     }
 
-    let response = await fetch(url, { ...fetchOptions, headers })
+    const response = await fetch(url, { ...fetchOptions, headers })
 
-    // Auto-refresh token on 401
-    if (response.status === 401 && authStore.refreshToken) {
-      const refreshed = await authStore.refreshAccessToken()
-      if (refreshed) {
-        headers['Authorization'] = `Bearer ${authStore.accessToken}`
-        response = await fetch(url, { ...fetchOptions, headers })
-      } else {
-        authStore.logout()
-        router.push('/login')
-        throw new Error('Session expired')
-      }
+    if (response.status === 401) {
+      authStore.logout()
+      router.push('/login')
+      throw new Error('Session expired')
     }
 
     if (!response.ok) {

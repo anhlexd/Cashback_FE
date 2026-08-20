@@ -214,6 +214,7 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
+  ShieldCheckIcon,
 } from "@heroicons/vue/24/outline";
 import { useDark, useToggle, onClickOutside, useMediaQuery } from "@vueuse/core";
 
@@ -254,6 +255,7 @@ onClickOutside(userMenuRef, () => (userMenuOpen.value = false));
 onClickOutside(notifRef, () => (notifOpen.value = false));
 
 // Menu sidebar: 2 nhóm "Hệ thống" và "Giải trí & phụ", khớp thiết kế
+// + nhóm "Quản trị" chỉ hiện với admin (is_staff)
 const navSections = computed(() => [
   {
     title: "Hệ thống",
@@ -276,6 +278,17 @@ const navSections = computed(() => [
       { to: "/aboutus", label: "Về chúng tôi", icon: InformationCircleIcon },
     ],
   },
+  ...(authStore.isAdmin
+    ? [
+        {
+          title: "Quản trị",
+          items: [
+            { to: "/admin", label: "Tổng quan", icon: ShieldCheckIcon },
+            { to: "/admin/withdrawals", label: "Xử lý rút tiền", icon: WalletIcon },
+          ],
+        },
+      ]
+    : []),
 ]);
 
 async function handleLogout() {
