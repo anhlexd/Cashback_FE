@@ -293,7 +293,7 @@ async function handleVerifyOtp() {
     const { token, ...user } = data.data
     authStore.setToken(token)
     authStore.setUser(user)
-    router.push('/')
+    router.push('/dashboard')
   } catch (err: any) {
     otpError.value = err?.message || 'Xác nhận OTP thất bại'
   } finally {

@@ -81,7 +81,8 @@ export const useAuthStore = defineStore('auth', {
         headers: { 'Authorization': `Token ${this.token}` },
       })
       if (response.ok) {
-        this.user = await response.json()
+        const data = await response.json()
+        this.user = data.data
       } else if (response.status === 401) {
         // Token không hợp lệ / đã hết hạn (vd sau khi reset password)
         this.user = null

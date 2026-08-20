@@ -129,6 +129,16 @@ const form = reactive({
   phone_number: authStore.user?.phone_number || '',
 })
 
+watch(() => authStore.user, (user) => {
+  if (!user) return
+  form.fullname = user.fullname || ''
+  form.phone_number = user.phone_number || ''
+}, { immediate: true })
+
+onMounted(() => {
+  if (!authStore.user) authStore.fetchProfile()
+})
+
 // idle -> confirm (đã gửi OTP, chờ nhập) -> done
 const pwStage = ref<'idle' | 'confirm' | 'done'>('idle')
 const changingPassword = ref(false)

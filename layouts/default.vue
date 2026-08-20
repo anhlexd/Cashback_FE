@@ -11,7 +11,7 @@
 
     <!-- Sidebar -->
     <aside
-      class="flex flex-col bg-white dark:bg-dark-100 border-r border-surface-200 dark:border-dark-50 transition-all duration-200 z-40
+      class="flex flex-col bg-gradient-to-b from-white via-white to-orange-50/40 dark:from-dark-100 dark:via-dark-100 dark:to-dark-100 border-r border-surface-200 dark:border-dark-50 shadow-[4px_0_24px_rgba(0,0,0,.03)] transition-all duration-200 z-40
              lg:relative lg:flex-shrink-0
              fixed inset-y-0 left-0"
       :class="[
@@ -20,17 +20,20 @@
     >
       <!-- Logo -->
       <div
-        class="flex items-center justify-center px-3 py-4 border-b border-surface-200 dark:border-dark-50"
+        class="relative flex items-center justify-center px-3 py-5 border-b border-surface-200 dark:border-dark-50"
       >
-        <AppLogo :compact="!sidebarOpen" />
+        <div
+          class="pointer-events-none absolute inset-x-6 top-0 h-14 rounded-full bg-brand-300/30 blur-2xl dark:bg-brand-900/20"
+        />
+        <AppLogo :compact="!sidebarOpen" class="relative" />
       </div>
 
       <!-- Nav -->
-      <nav class="flex-1 overflow-y-auto p-2 space-y-0.5">
+      <nav class="flex-1 overflow-y-auto p-2.5 space-y-0.5">
         <template v-for="(section, sIdx) in navSections" :key="section.title">
           <div
             v-if="sidebarOpen"
-            class="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+            class="px-3 pt-4 pb-1.5 text-[10px] font-bold tracking-wider text-gray-400 uppercase"
             :class="{ 'mt-1': sIdx > 0 }"
           >
             {{ section.title }}
@@ -44,18 +47,21 @@
             <NuxtLink :to="item.to" custom v-slot="{ isActive, navigate }">
               <div
                 @click="navigate"
-                :class="isActive ? 'nav-item-active' : 'nav-item'"
+                :class="[isActive ? 'nav-item-active' : 'nav-item', 'group']"
                 :title="!sidebarOpen ? item.label : ''"
               >
-                <div class="relative flex-shrink-0">
+                <div
+                  class="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-colors"
+                  :class="isActive ? 'bg-white/20' : 'group-hover:bg-brand-50 dark:group-hover:bg-brand-950/40'"
+                >
                   <component :is="item.icon" class="w-4 h-4" />
                 </div>
-                <span v-if="sidebarOpen" class="truncate flex-1">{{
+                <span v-if="sidebarOpen" class="text-sm font-semibold truncate flex-1">{{
                   item.label
                 }}</span>
                 <span
                   v-if="sidebarOpen && item.badge"
-                  class="ml-auto flex-shrink-0 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-semibold whitespace-nowrap"
+                  class="ml-auto flex-shrink-0 rounded-md bg-gradient-to-r from-amber-400 to-orange-400 px-1.5 py-0.5 text-[10px] font-bold text-white whitespace-nowrap shadow-sm"
                 >
                   {{ item.badge }}
                 </span>
@@ -65,28 +71,29 @@
         </template>
       </nav>
 
-      <Button
+      <button
+        type="button"
         @click="sidebarOpen = !sidebarOpen"
-        :class="[
-          'absolute right-3 bottom-16 mb-2 btn-ghost p-1 flex items-center justify-center gap-2 bg-transparent transition-all duration-300 overflow-hidden border border-gray-300 dark:border-gray-500 hover:border-gray-400 dark:hover:border-gray-400',
-          sidebarOpen ? 'w-8' : 'w-8 justify-center',
-        ]"
+        class="absolute -right-3 bottom-20 z-10 grid h-6 w-6 place-items-center rounded-full border border-surface-200 bg-white text-gray-500 shadow-[0_4px_12px_rgba(0,0,0,.1)] transition-all hover:border-brand-300 hover:text-brand-600 dark:border-dark-50 dark:bg-dark-100 dark:text-gray-400"
       >
-        <ChevronLeftIcon v-if="sidebarOpen" class="w-4 h-4" />
-        <ChevronRightIcon v-else class="w-4 h-4" />
-      </Button>
+        <ChevronLeftIcon v-if="sidebarOpen" class="w-3.5 h-3.5" />
+        <ChevronRightIcon v-else class="w-3.5 h-3.5" />
+      </button>
 
       <!-- User -->
-      <div class="border-t border-surface-200 dark:border-dark-50 p-2">
+      <div class="border-t border-surface-200 dark:border-dark-50 p-2.5">
         <div class="relative" ref="userMenuRef">
           <button
             @click="userMenuOpen = !userMenuOpen"
-            class="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-surface-100 dark:hover:bg-dark-50 transition-colors"
+            class="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white hover:shadow-[0_4px_16px_rgba(0,0,0,.05)] dark:hover:bg-dark-50 transition-all"
           >
-            <UserAvatar :user="authStore.user" size="sm" />
+            <div class="relative flex-shrink-0">
+              <div class="absolute -inset-0.5 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 opacity-70" />
+              <UserAvatar :user="authStore.user" size="sm" class="relative" />
+            </div>
             <div v-if="sidebarOpen" class="flex-1 text-left min-w-0">
               <div
-                class="text-xs font-medium text-gray-900 dark:text-white truncate"
+                class="text-xs font-semibold text-gray-900 dark:text-white truncate"
               >
                 {{ authStore.user?.fullname }}
               </div>
@@ -99,17 +106,17 @@
           <Transition name="scale-in">
             <div
               v-if="userMenuOpen"
-              class="absolute bottom-full left-0 mb-1 w-48 card shadow-modal z-50 py-1 animate-scale-in"
+              class="absolute bottom-full left-0 mb-2 w-48 rounded-2xl border border-surface-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,.12)] z-50 py-1.5 animate-scale-in dark:border-dark-50 dark:bg-dark-100"
             >
               <NuxtLink
                 to="/settings/profile"
-                class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-surface-100 dark:hover:bg-dark-50"
+                class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/40 dark:hover:text-brand-300"
               >
                 <UserCircleIcon class="w-4 h-4" /> Hồ sơ
               </NuxtLink>
               <NuxtLink
                 to="/settings"
-                class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-surface-100 dark:hover:bg-dark-50"
+                class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/40 dark:hover:text-brand-300"
               >
                 <Cog6ToothIcon class="w-4 h-4" /> Cài đặt
               </NuxtLink>
@@ -132,7 +139,7 @@
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Top bar -->
       <header
-        class="flex-shrink-0 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 bg-white dark:bg-dark-100 border-b border-surface-200 dark:border-dark-50"
+        class="flex-shrink-0 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 bg-white/80 backdrop-blur-xl dark:bg-dark-100/80 border-b border-surface-200 dark:border-dark-50"
       >
         <!-- Hamburger (mobile only) -->
         <button
@@ -146,7 +153,10 @@
         <div class="flex-1"></div>
 
         <!-- Dark mode -->
-        <button @click="toggleDark()" class="btn-icon btn-ghost">
+        <button
+          @click="toggleDark()"
+          class="btn-icon rounded-xl text-gray-500 hover:bg-brand-50 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-brand-950/40 dark:hover:text-brand-300 transition-colors"
+        >
           <SunIcon v-if="isDark" class="w-4 h-4" />
           <MoonIcon v-else class="w-4 h-4" />
         </button>
@@ -155,12 +165,13 @@
         <div class="relative" ref="notifRef">
           <button
             @click="notifOpen = !notifOpen"
-            class="btn-icon btn-ghost relative"
+            class="btn-icon relative rounded-xl text-gray-500 hover:bg-brand-50 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-brand-950/40 dark:hover:text-brand-300 transition-colors"
+            :class="notifOpen ? 'bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-300' : ''"
           >
             <BellIcon class="w-4 h-4" />
             <span
               v-if="unreadCount > 0"
-              class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center leading-none"
+              class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none shadow-sm ring-2 ring-white dark:ring-dark-100"
             >
               {{ unreadCount > 9 ? "9+" : unreadCount }}
             </span>

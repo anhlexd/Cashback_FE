@@ -131,7 +131,7 @@
                 <div>
                   <div class="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Đơn vị chủ quản</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">Nhóm phát triển MeMoon</div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">Địa chỉ: A14B2 Yên Hòa, Cầu Giấy, Hà Nội</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Địa chỉ: Viwaseen Tower, Trung Văn, Hà Nội</div>
                 </div>
               </div>
               <div class="flex gap-3 rounded-lg border border-gray-100 dark:border-gray-800 p-4">
